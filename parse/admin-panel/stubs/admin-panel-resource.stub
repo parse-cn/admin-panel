@@ -1,0 +1,48 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ namespacedModel }};
+use Parse\AdminPanel\Resources\AdminPanelResource;
+
+final class {{ class }} extends AdminPanelResource
+{
+    public static function model(): string
+    {
+        return {{ model }}::class;
+    }
+
+    public static function routeName(): string
+    {
+        return '{{ routeName }}';
+    }
+
+    public static function title(): string
+    {
+        return '{{ title }}';
+    }
+
+    public static function singularLabel(): string
+    {
+        return '{{ singularLabel }}';
+    }
+
+    public static function navigation(): array
+    {
+        return [
+            'label' => '{{ title }}',
+            'icon' => '{{ navigationIcon }}',
+            'group' => '{{ navigationGroup }}',
+        ];
+    }
+
+    public static function columns(): array
+    {
+        return {{ columns }};
+    }
+
+    public static function fields(): array
+    {
+        return {{ fields }};
+    }
+}
