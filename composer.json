@@ -1,0 +1,23 @@
+{
+    "name": "parse/admin-panel",
+    "description": "Installable Laravel admin panel platform with Inertia React, CRUD, and UI.",
+    "type": "library",
+    "require": {
+        "php": "^8.4",
+        "inertiajs/inertia-laravel": "^3.0",
+        "laravel/framework": "^13.0",
+        "laravel/wayfinder": "^0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Parse\\AdminPanel\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Parse\\AdminPanel\\AdminPanelServiceProvider"
+            ]
+        }
+    }
+}

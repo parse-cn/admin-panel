@@ -1,0 +1,18 @@
+<?php
+
+use Parse\AdminPanel\AdminPanel;
+
+$panel = AdminPanel::panel('admin_panel');
+
+// $panel->resource('users', \App\Admin\Resources\UserResource::class);
+
+// $panel->page(
+//     uri: 'reports',
+//     name: 'reports',
+//     action: \App\Admin\Controllers\ReportsController::class,
+//     navigation: [
+//         'label' => 'Reports',
+//         'icon' => 'bar-chart-line',
+//         'group' => 'Workspace',
+//     ],
+// );
