@@ -71,7 +71,7 @@ final class AdminPanelServiceProvider extends ServiceProvider
         $this->app->booted(function (): void {
             if (! $this->app->routesAreCached()) {
                 $this->app->make(AdminPanelRouteLoader::class)
-                    ->load(base_path('routes/admin.php'));
+                    ->load(base_path('routes/admin-panel.php'));
             }
 
             $this->loadRoutesFrom(__DIR__.'/../routes/web.php');

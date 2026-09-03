@@ -36,7 +36,7 @@ final class MakeAdminResourceCommand extends GeneratorCommand
 
         $resource = $this->qualifyClass($this->getNameInput());
 
-        $this->components->info('Register the resource in routes/admin.php:');
+        $this->components->info('Register the resource in routes/admin-panel.php:');
         $this->line(sprintf(
             "AdminPanel::panel('%s')->resource('%s', \\%s::class);",
             $this->panel()->id,

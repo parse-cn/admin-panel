@@ -48,11 +48,11 @@ pnpm build
 安装命令会：
 
 - 发布 `config/admin-panel.php`
-- 创建 `routes/admin.php`
+- 创建 `routes/admin-panel.php`
 - 补充前端依赖
 - 注册 Admin Panel Vite 入口
 - 注册 Inertia、React 和 Tailwind Vite 插件
-- 补充 TypeScript source 路径
+- 注册 `@admin-panel` 的 TypeScript alias 与 source 路径
 - 调用 `wayfinder:generate --with-form` 生成 Wayfinder 类型
 
 如果安装器报告 `package.json`、Vite 配置或 TypeScript 配置无法自动修改，按警告手动补齐后再执行
@@ -533,7 +533,7 @@ php artisan make:admin-resource Customer \
 | `--force` | — | 覆盖已存在的 Resource 文件 |
 
 生成器会从 Model 的数据库表结构读取字段，因此目标表必须已存在；命令只生成 Resource，不会自动写入
-`routes/admin.php`。生成完成后，按命令输出的示例手动调用 `$panel->resource(...)` 注册。
+`routes/admin-panel.php`。生成完成后，按命令输出的示例手动调用 `$panel->resource(...)` 注册。
 
 `--panel` 默认值是 `admin`。只有目标 Panel 的 ID 正好是 `admin` 时才可以省略；其他 Panel（包括只有一个
 `backoffice` Panel 的应用）都必须显式传入 `--panel`。

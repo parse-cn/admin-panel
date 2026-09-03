@@ -14,8 +14,13 @@ final readonly class AdminPanelInstaller
      */
     private const array DEPENDENCIES = [
         '@base-ui/react' => '^1.6.0',
+        '@dnd-kit/core' => '^6.3.1',
+        '@dnd-kit/modifiers' => '^9.0.0',
+        '@dnd-kit/sortable' => '^10.0.0',
+        '@dnd-kit/utilities' => '^3.2.2',
         '@inertiajs/react' => '^3.0.0',
         '@tanstack/react-table' => '^8.21.3',
+        '@tanstack/react-virtual' => '^3.14.10',
         'class-variance-authority' => '^0.7.1',
         'clsx' => '^2.1.1',
         'date-fns' => '^4.4.0',
@@ -23,6 +28,7 @@ final readonly class AdminPanelInstaller
         'react' => '^19.2.0',
         'react-day-picker' => '^10.0.1',
         'react-dom' => '^19.2.0',
+        'recharts' => '^3.10.1',
         'sonner' => '^2.0.8',
         'tailwind-merge' => '^3.0.1',
         'tw-animate-css' => '^1.4.0',
@@ -99,10 +105,10 @@ final readonly class AdminPanelInstaller
         array &$warnings,
     ): void {
         $source = dirname(__DIR__, 2).'/stubs/routes.admin.stub';
-        $destination = $applicationPath.'/routes/admin.php';
+        $destination = $applicationPath.'/routes/admin-panel.php';
 
         if ($this->files->exists($destination)) {
-            $unchanged[] = 'routes/admin.php already exists';
+            $unchanged[] = 'routes/admin-panel.php already exists';
 
             return;
         }
@@ -115,7 +121,7 @@ final readonly class AdminPanelInstaller
 
         $this->files->ensureDirectoryExists(dirname($destination));
         $this->files->copy($source, $destination);
-        $completed[] = 'Created routes/admin.php';
+        $completed[] = 'Created routes/admin-panel.php';
     }
 
     /**
@@ -364,7 +370,7 @@ final readonly class AdminPanelInstaller
     private function addInertiaVitePlugin(string $contents): ?string
     {
         $updated = preg_replace(
-            '/^(\s*)plugins:\s*\[\s*$/m',
+            '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[\s*$/m',
             "$0\n$1    inertia(),",
             $contents,
             1,
@@ -385,7 +391,7 @@ final readonly class AdminPanelInstaller
     private function addReactVitePlugin(string $contents): ?string
     {
         $updated = preg_replace(
-            '/^(\s*)plugins:\s*\[\s*$/m',
+            '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[\s*$/m',
             "$0\n$1    react(),",
             $contents,
             1,
@@ -406,7 +412,7 @@ final readonly class AdminPanelInstaller
     private function addAdminPanelViteAlias(string $contents): ?string
     {
         $updated = preg_replace(
-            '/^(\s*)plugins:\s*\[/m',
+            '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[/m',
             <<<'CONFIG'
 $1resolve: {
 $1    alias: {
@@ -468,44 +474,73 @@ CONFIG,
 
         $contents = $this->files->get($tsconfigPath);
 
-        $adminPanelSourcesAreIncluded = str_contains($contents, '/admin-panel/resources/js/**/*');
-        $crudSourcesAreIncluded = str_contains($contents, '/crud/resources/js/**/*');
-        $uiSourcesAreIncluded = str_contains($contents, '/ui/resources/js/**/*');
+        $sourcePattern = 'vendor/parse/admin-panel/resources/js/**/*';
+        $pathsAreRegistered = str_contains($contents, '"@admin-panel/*"');
 
-        if ($adminPanelSourcesAreIncluded && $crudSourcesAreIncluded && $uiSourcesAreIncluded) {
-            $unchanged[] = 'Admin Panel TypeScript sources are already included';
+        if (! $pathsAreRegistered) {
+            $updated = $this->addTypeScriptPaths($contents);
 
-            return;
+            if ($updated === null) {
+                $warnings[] = 'Register the @admin-panel TypeScript paths in tsconfig.json';
+            } else {
+                $contents = $updated;
+                $completed[] = 'Registered the Admin Panel TypeScript paths';
+            }
+        } else {
+            $unchanged[] = 'Admin Panel TypeScript paths are already registered';
         }
 
-        $sources = collect([
-            $adminPanelSourcesAreIncluded ? null : 'vendor/parse/admin-panel/resources/js/**/*',
-            $crudSourcesAreIncluded ? null : 'vendor/parse/admin-panel/resources/js/crud/**/*',
-            $uiSourcesAreIncluded ? null : 'vendor/parse/admin-panel/resources/js/ui/**/*',
-        ])
-            ->filter()
-            ->flatMap(fn (string $source): array => [
-                "{$source}.ts",
-                "{$source}.tsx",
-            ])
-            ->map(fn (string $source): string => "\"{$source}\",")
-            ->implode("\n");
+        if (! str_contains($contents, $sourcePattern)) {
+            $updated = preg_replace(
+                '/^(\s*)"include":\s*\[\s*$/m',
+                "$0\n$1    \"{$sourcePattern}.ts\",\n$1    \"{$sourcePattern}.tsx\",",
+                $contents,
+                1,
+                $replacementCount,
+            );
+
+            if ($updated === null || $replacementCount !== 1) {
+                $warnings[] = 'Include the Admin Panel resource directory in tsconfig.json';
+            } else {
+                $contents = $updated;
+                $completed[] = 'Included the Admin Panel TypeScript sources';
+            }
+        } else {
+            $unchanged[] = 'Admin Panel TypeScript sources are already included';
+        }
+
+        if ($contents !== $this->files->get($tsconfigPath)) {
+            $this->files->replace($tsconfigPath, $contents);
+        }
+    }
+
+    private function addTypeScriptPaths(string $contents): ?string
+    {
+        $paths = <<<'PATHS'
+"@admin-panel": ["./vendor/parse/admin-panel/resources/js"],
+"@admin-panel/*": ["./vendor/parse/admin-panel/resources/js/*"],
+PATHS;
 
         $updated = preg_replace(
-            '/^(\s*)"include":\s*\[\s*$/m',
-            "$0\n".preg_replace('/^/m', '$1    ', $sources),
+            '/^(\s*)"paths":\s*\{\s*$/m',
+            "$0\n$1    {$paths}",
             $contents,
             1,
             $replacementCount,
         );
 
-        if ($updated === null || $replacementCount !== 1) {
-            $warnings[] = 'Include the Admin Panel resource directory in tsconfig.json';
-
-            return;
+        if ($updated !== null && $replacementCount === 1) {
+            return $updated;
         }
 
-        $this->files->replace($tsconfigPath, $updated);
-        $completed[] = 'Included the Admin Panel TypeScript sources';
+        $updated = preg_replace(
+            '/^(\s*)"compilerOptions":\s*\{\s*$/m',
+            "$0\n$1    \"paths\": {\n$1        {$paths}$1    },",
+            $contents,
+            1,
+            $replacementCount,
+        );
+
+        return $updated !== null && $replacementCount === 1 ? $updated : null;
     }
 }
