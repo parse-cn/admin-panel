@@ -23,6 +23,10 @@ return [
             'domain' => env('ADMIN_PANEL_DOMAIN'),
             'prefix' => env('ADMIN_PANEL_PREFIX', 'admin'),
             'route_name' => 'admin_panel',
+            'brand' => [
+                'name' => config('app.name', 'Admin'),
+                'logo' => null,
+            ],
             'pagination' => [
                 'per_page' => 10,
                 'per_page_options' => [5, 10, 15, 25, 50],
