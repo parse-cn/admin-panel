@@ -92,6 +92,10 @@ final class HandleAdminPanelInertiaRequests extends Middleware
                         : null,
                 ] : null,
             ],
+            'accountMenuUrls' => $panel->profileEnabled() ? [
+                'profile' => route($panel->route('profile')),
+                'preferences' => route($panel->route('profile.preferences')),
+            ] : null,
             'navigation' => $this->navigation->for($request),
             'sidebarOpen' => $request->cookie('sidebar_state', 'true') === 'true',
             'i18n' => [

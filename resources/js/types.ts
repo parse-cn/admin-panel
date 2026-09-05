@@ -62,6 +62,10 @@ export type AdminPanelPageProps = {
     auth: {
         user: AdminPanelUser | null;
     };
+    accountMenuUrls?: {
+        preferences: string;
+        profile: string;
+    } | null;
     flash?: {
         toast?: AdminPanelFlashToast;
     };

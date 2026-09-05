@@ -202,6 +202,37 @@ function LocalizedAdminPanelLayout({
         props,
         t,
     });
+    const defaultAccountMenuItems = props.accountMenuUrls
+        ? [
+              {
+                  href: props.accountMenuUrls.profile,
+                  icon: 'user-line',
+                  key: 'profile',
+                  label: t('account.profile'),
+              },
+              {
+                  href: props.accountMenuUrls.preferences,
+                  icon: 'settings-3-line',
+                  key: 'preferences',
+                  label: t('account.preferences'),
+              },
+          ]
+        : [
+              {
+                  disabled: true,
+                  icon: 'user-line',
+                  key: 'profile',
+                  label: t('account.profile'),
+                  shortcut: t('account.soon'),
+              },
+              {
+                  disabled: true,
+                  icon: 'settings-3-line',
+                  key: 'preferences',
+                  label: t('account.preferences'),
+                  shortcut: t('account.soon'),
+              },
+          ];
 
     return (
         <div className="contents" style={themeVariables as CSSProperties}>
@@ -210,22 +241,7 @@ function LocalizedAdminPanelLayout({
                     label: t('account.label'),
                     openMenu: t('account.open_menu'),
                     items: accountMenuItems ??
-                        registeredAccountMenuItems ?? [
-                            {
-                                disabled: true,
-                                icon: 'user-line',
-                                key: 'profile',
-                                label: t('account.profile'),
-                                shortcut: t('account.soon'),
-                            },
-                            {
-                                disabled: true,
-                                icon: 'settings-3-line',
-                                key: 'preferences',
-                                label: t('account.preferences'),
-                                shortcut: t('account.soon'),
-                            },
-                        ],
+                        registeredAccountMenuItems ?? defaultAccountMenuItems,
                     signOut: t('account.sign_out'),
                     theme: t('account.theme'),
                     themeStatus: (current, next) =>
