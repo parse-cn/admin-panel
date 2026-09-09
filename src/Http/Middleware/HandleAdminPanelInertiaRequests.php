@@ -78,6 +78,7 @@ final class HandleAdminPanelInertiaRequests extends Middleware
                 'id' => $panel->id,
                 'appShell' => $panel->appShell,
                 'theme' => $panel->theme,
+                'timezone' => config('app.timezone', 'UTC'),
                 'crudWidgetUrl' => route($panel->route('crud.widget.data'), [
                     'resource' => '__resource__',
                 ]),

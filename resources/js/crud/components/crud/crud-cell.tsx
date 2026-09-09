@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightIcon, CheckIcon, CopyIcon, MinusIcon } from 'lucide-react';
 import { Avatar, AvatarImage, Badge } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
+import type { AdminPanelPageProps } from '../../../types';
 import type { CrudColumn, CrudRecord } from './types';
 
 type CrudCellProps = {
@@ -19,16 +20,6 @@ const badgeVariants = {
     warning: 'warning-outline',
     destructive: 'destructive-outline',
 } as const;
-
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone: 'UTC',
-});
 
 const detailLinkClassName =
     'group/detail-link inline-flex w-fit max-w-full cursor-pointer items-center gap-1 font-medium text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none';
@@ -77,6 +68,7 @@ export function CrudCell({
     value,
 }: CrudCellProps) {
     const { booleanOptions, translateOptionLabel } = useCrudI18n();
+    const { panel } = usePage<AdminPanelPageProps>().props;
     const [copied, setCopied] = useState(false);
 
     if (value === null || value === undefined || value === '') {
@@ -231,12 +223,21 @@ export function CrudCell({
 
     if (column.type === 'datetime') {
         const date = new Date(String(value));
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: panel.timezone,
+        });
 
         return (
             <span>
                 {Number.isNaN(date.getTime())
                     ? String(value)
-                    : dateTimeFormatter.format(date)}
+                    : formatter.format(date)}
             </span>
         );
     }

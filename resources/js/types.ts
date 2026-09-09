@@ -81,6 +81,7 @@ export type AdminPanelPageProps = {
         };
         id: string;
         theme?: Record<string, string>;
+        timezone: string;
     };
     profile?: {
         email: string;
