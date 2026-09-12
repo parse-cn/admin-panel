@@ -68,7 +68,7 @@ export function CrudCell({
     value,
 }: CrudCellProps) {
     const { booleanOptions, translateOptionLabel } = useCrudI18n();
-    const { panel } = usePage<AdminPanelPageProps>().props;
+    const { i18n, panel } = usePage<AdminPanelPageProps>().props;
     const [copied, setCopied] = useState(false);
 
     if (value === null || value === undefined || value === '') {
@@ -223,15 +223,25 @@ export function CrudCell({
 
     if (column.type === 'datetime') {
         const date = new Date(String(value));
-        const formatter = new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit',
-            timeZone: panel.timezone,
-        });
+        const locale = i18n.locale.replace('_', '-');
+        const formatter = new Intl.DateTimeFormat(
+            locale,
+            locale.startsWith('zh-')
+                ? {
+                      dateStyle: 'long',
+                      timeStyle: 'medium',
+                      timeZone: panel.timezone,
+                  }
+                : {
+                      year: 'numeric',
+                      month: 'numeric',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      timeZone: panel.timezone,
+                  },
+        );
 
         return (
             <span>
