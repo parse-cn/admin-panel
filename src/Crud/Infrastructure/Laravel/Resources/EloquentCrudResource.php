@@ -236,15 +236,26 @@ abstract class EloquentCrudResource extends CrudResource
     public static function rules(?Model $record = null): array
     {
         return collect(self::fieldDefinitions())
-            ->filter(fn (array $field): bool => array_key_exists('rules', $field))
+            ->filter(fn (array $field): bool => array_key_exists('rules', $field) || array_key_exists('itemRules', $field))
             ->mapWithKeys(function (array $field) use ($record): array {
-                $rules = $field['rules'];
+                $rules = $field['rules'] ?? [];
+                $itemRules = $field['itemRules'] ?? null;
 
-                return [
-                    $field['name'] => $rules instanceof Closure
-                        ? $rules($record)
-                        : $rules,
-                ];
+                $resolvedRules = $rules instanceof Closure
+                    ? $rules($record)
+                    : $rules;
+
+                $resolvedItemRules = $itemRules instanceof Closure
+                    ? $itemRules($record)
+                    : $itemRules;
+
+                $fieldRules = [$field['name'] => $resolvedRules];
+
+                if ($itemRules !== null) {
+                    $fieldRules[$field['name'].'.*'] = $resolvedItemRules;
+                }
+
+                return $fieldRules;
             })
             ->all();
     }
@@ -619,7 +630,7 @@ abstract class EloquentCrudResource extends CrudResource
      */
     private static function normalizeField(array $field): array
     {
-        unset($field['rules']);
+        unset($field['rules'], $field['itemRules']);
 
         return [
             'type' => 'text',

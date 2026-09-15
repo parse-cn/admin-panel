@@ -76,6 +76,7 @@ export type CrudField = {
         | 'email'
         | 'password'
         | 'textarea'
+        | 'ip-list'
         | 'key-value'
         | 'select'
         | 'boolean'
@@ -90,6 +91,8 @@ export type CrudField = {
     options?: CrudOption[];
     credentialOptions?: Record<string, CrudCredentialOption[]>;
 };
+
+export type CrudFormData = Record<string, string | string[]>;
 
 export type CrudCredentialOption = {
     key: string;

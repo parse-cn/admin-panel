@@ -465,6 +465,23 @@ final class CustomerResource extends AdminPanelResource
 }
 ```
 
+IP 白名单可使用专用的标签输入字段。它以 `string[]` 提交；`itemRules`
+会被转换为 Laravel 的 `allowed_ips.*` 验证规则：
+
+```php
+[
+    'name' => 'allowed_ips',
+    'label' => 'Allowed IP addresses',
+    'type' => 'ip-list',
+    'placeholder' => 'Enter an IP address',
+    'rules' => ['nullable', 'array'],
+    'itemRules' => ['ip', 'distinct'],
+]
+```
+
+该控件支持回车、逗号或粘贴的逗号/换行列表创建标签，并将
+`allowed_ips.0` 之类的验证错误显示在对应标签上。
+
 注册：
 
 ```php
