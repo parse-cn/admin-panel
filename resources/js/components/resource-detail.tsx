@@ -137,7 +137,7 @@ export function ResourceDetailSheet() {
                     <SheetContent
                         side="right"
                         showCloseButton
-                        className="flex flex-col gap-0 overflow-hidden rounded-xl p-0 outline-none data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:left-auto data-[side=right]:h-[calc(100svh-2rem)] data-[side=right]:w-[min(64rem,calc(100vw-2rem))] data-[side=right]:max-w-none max-sm:data-[side=right]:inset-y-0 max-sm:data-[side=right]:right-0 max-sm:data-[side=right]:h-svh max-sm:data-[side=right]:w-full max-sm:data-[side=right]:rounded-none data-[side=right]:sm:max-w-none"
+                        className="crud-widget-sheet"
                     >
                         <Suspense fallback={null}>
                             <ResourceDetailContent
