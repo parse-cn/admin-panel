@@ -51,9 +51,6 @@ type CrudWidgetBulkResponse = {
     count: number;
 };
 
-const widgetSheetClassName =
-    'flex flex-col gap-0 overflow-hidden rounded-xl p-0 outline-none data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:left-auto data-[side=right]:h-[calc(100svh-2rem)] data-[side=right]:w-[min(64rem,calc(100vw-2rem))] data-[side=right]:max-w-none data-[side=right]:sm:max-w-none';
-
 function endpointFor(
     resource: string,
     endpoint: string | undefined,
@@ -294,7 +291,7 @@ export function CrudWidget({
                 open={formRecord !== undefined}
                 onOpenChange={(open) => !open && setFormRecord(undefined)}
             >
-                <SheetContent side="right" className={widgetSheetClassName}>
+                <SheetContent side="right" className="crud-widget-sheet">
                     {formRecord !== undefined && (
                         <CrudForm
                             key={formRecord?.key ?? 'create'}
@@ -321,7 +318,7 @@ export function CrudWidget({
                 open={activeRecord !== null}
                 onOpenChange={(open) => !open && setActiveRecord(null)}
             >
-                <SheetContent side="right" className={widgetSheetClassName}>
+                <SheetContent side="right" className="crud-widget-sheet">
                     {activeRecord && (
                         <CrudShow
                             resource={definition}

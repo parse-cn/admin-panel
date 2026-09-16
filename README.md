@@ -50,13 +50,17 @@ pnpm build
 - 发布 `config/admin-panel.php`
 - 创建 `routes/admin-panel.php`
 - 补充前端依赖
-- 注册 Admin Panel Vite 入口
+- 创建 `resources/js/admin-panel.tsx` 并注册为 Admin Panel Vite 入口
 - 注册 Inertia、React 和 Tailwind Vite 插件
 - 注册 `@admin-panel` 的 TypeScript alias 与 source 路径
 - 调用 `wayfinder:generate --with-form` 生成 Wayfinder 类型
 
 如果安装器报告 `package.json`、Vite 配置或 TypeScript 配置无法自动修改，按警告手动补齐后再执行
 `pnpm install` 和 `pnpm build`。安装命令不会创建或修改业务 Panel 配置。
+
+安装器会把 Admin Panel 使用的前端包及其 Vite 运行时依赖（例如
+`@base-ui/utils`、`@tanstack/table-core`）声明为项目直接依赖；这保证 pnpm 与
+`preserveSymlinks: true` 的 Vite 配置可以正确解析 Base UI 的子模块。
 
 默认 Panel 复用 Laravel 的 `App\Models\User` 和 `users` provider。
 
@@ -72,7 +76,7 @@ return [
         'web',
     ],
     'vite' => [
-        'entry' => 'vendor/parse/admin-panel/resources/js/app.tsx',
+        'entry' => 'resources/js/admin-panel.tsx',
     ],
     'panels' => [
         'admin_panel' => [

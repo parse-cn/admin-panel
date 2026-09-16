@@ -7,31 +7,57 @@ use JsonException;
 
 final readonly class AdminPanelInstaller
 {
-    private const string VITE_ENTRY = 'vendor/parse/admin-panel/resources/js/app.tsx';
+    private const string VITE_ENTRY = 'resources/js/admin-panel.tsx';
+
+    private const string PACKAGE_VITE_ENTRY = 'vendor/parse/admin-panel/resources/js/app.tsx';
 
     /**
      * @var array<string, string>
      */
     private const array DEPENDENCIES = [
         '@base-ui/react' => '^1.6.0',
+        '@base-ui/utils' => '^0.4.0',
+        '@babel/runtime' => '^7.29.7',
+        '@date-fns/tz' => '^1.4.1',
         '@dnd-kit/core' => '^6.3.1',
+        '@dnd-kit/accessibility' => '^3.1.1',
         '@dnd-kit/modifiers' => '^9.0.0',
         '@dnd-kit/sortable' => '^10.0.0',
         '@dnd-kit/utilities' => '^3.2.2',
+        '@floating-ui/core' => '^1.7.3',
+        '@floating-ui/dom' => '^1.7.4',
+        '@floating-ui/react-dom' => '^2.1.9',
+        '@floating-ui/utils' => '^0.2.12',
+        '@inertiajs/core' => '^3.0.0',
         '@inertiajs/react' => '^3.0.0',
+        '@reduxjs/toolkit' => '^2.0.0',
         '@tanstack/react-table' => '^8.21.3',
         '@tanstack/react-virtual' => '^3.14.10',
+        '@tanstack/table-core' => '^8.21.3',
+        '@tanstack/virtual-core' => '^3.14.10',
         'class-variance-authority' => '^0.7.1',
         'clsx' => '^2.1.1',
         'date-fns' => '^4.4.0',
+        'decimal.js-light' => '^2.5.1',
+        'es-toolkit' => '^1.39.3',
+        'eventemitter3' => '^5.0.1',
+        'immer' => '^11.1.8',
         'lucide-react' => '^1.25.0',
         'react' => '^19.2.0',
         'react-day-picker' => '^10.0.1',
         'react-dom' => '^19.2.0',
+        'react-redux' => '^9.0.0',
         'recharts' => '^3.10.1',
+        'redux' => '^5.0.1',
+        'redux-thunk' => '^3.1.0',
+        'reselect' => '^5.2.0',
         'sonner' => '^2.0.8',
         'tailwind-merge' => '^3.0.1',
+        'tiny-invariant' => '^1.3.3',
+        'tslib' => '^2.0.0',
         'tw-animate-css' => '^1.4.0',
+        'use-sync-external-store' => '^1.6.0',
+        'victory-vendor' => '^37.0.2',
     ];
 
     /**
@@ -72,6 +98,12 @@ final readonly class AdminPanelInstaller
             $warnings,
         );
         $this->installNodeDependencies(
+            $applicationPath,
+            $completed,
+            $unchanged,
+            $warnings,
+        );
+        $this->installApplicationViteEntry(
             $applicationPath,
             $completed,
             $unchanged,
@@ -215,6 +247,52 @@ final readonly class AdminPanelInstaller
     }
 
     /**
+     * Publish a local entry point so Laravel's Vite integration always serves a
+     * source file from the host application, rather than raw TSX from vendor.
+     *
+     * @param  list<string>  $completed
+     * @param  list<string>  $unchanged
+     * @param  list<string>  $warnings
+     */
+    private function installApplicationViteEntry(
+        string $applicationPath,
+        array &$completed,
+        array &$unchanged,
+        array &$warnings,
+    ): void {
+        $source = dirname(__DIR__, 2).'/stubs/admin-panel.tsx.stub';
+        $destination = $applicationPath.'/resources/js/admin-panel.tsx';
+
+        if ($this->files->exists($destination)) {
+            $unchanged[] = 'Admin Panel application Vite entry already exists';
+        } elseif (! $this->files->exists($source)) {
+            $warnings[] = 'Admin Panel Vite entry stub could not be located';
+        } else {
+            $this->files->ensureDirectoryExists(dirname($destination));
+            $this->files->copy($source, $destination);
+            $completed[] = 'Created the Admin Panel application Vite entry';
+        }
+
+        $configPath = $applicationPath.'/config/admin-panel.php';
+
+        if (! $this->files->exists($configPath)) {
+            return;
+        }
+
+        $contents = $this->files->get($configPath);
+
+        if (! str_contains($contents, self::PACKAGE_VITE_ENTRY)) {
+            return;
+        }
+
+        $this->files->replace(
+            $configPath,
+            str_replace(self::PACKAGE_VITE_ENTRY, self::VITE_ENTRY, $contents),
+        );
+        $completed[] = 'Configured the Admin Panel application Vite entry';
+    }
+
+    /**
      * @param  array<string, mixed>  $manifest
      * @param  array<string, string>  $required
      */
@@ -269,7 +347,8 @@ final readonly class AdminPanelInstaller
         }
 
         $contents = $this->files->get($viteConfig);
-        $entryWasRegistered = str_contains($contents, '/admin-panel/resources/js/app.tsx');
+        $entryWasRegistered = str_contains($contents, "'".self::VITE_ENTRY."'")
+            || str_contains($contents, '"'.self::VITE_ENTRY.'"');
 
         if (! $entryWasRegistered) {
             $updated = $this->addViteEntry($contents);
@@ -315,6 +394,22 @@ final readonly class AdminPanelInstaller
             } else {
                 $contents = $updated;
                 $completed[] = 'Registered the React Vite plugin';
+            }
+        }
+
+        $tailwindPluginIsRegistered = str_contains($contents, "from '@tailwindcss/vite'")
+            && preg_match('/\btailwindcss\s*\(/', $contents) === 1;
+
+        if ($tailwindPluginIsRegistered) {
+            $unchanged[] = 'Tailwind Vite plugin is already registered';
+        } else {
+            $updated = $this->addTailwindVitePlugin($contents);
+
+            if ($updated === null) {
+                $warnings[] = 'Register the @tailwindcss/vite plugin in the Vite configuration';
+            } else {
+                $contents = $updated;
+                $completed[] = 'Registered the Tailwind Vite plugin';
             }
         }
 
@@ -409,12 +504,34 @@ final readonly class AdminPanelInstaller
         return $updated;
     }
 
+    private function addTailwindVitePlugin(string $contents): ?string
+    {
+        $updated = preg_replace(
+            '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[\s*$/m',
+            "$0\n$1    tailwindcss(),",
+            $contents,
+            1,
+            $replacementCount,
+        );
+
+        if ($updated === null || $replacementCount !== 1) {
+            return null;
+        }
+
+        if (! str_contains($updated, "from '@tailwindcss/vite'")) {
+            $updated = "import tailwindcss from '@tailwindcss/vite';\n".$updated;
+        }
+
+        return $updated;
+    }
+
     private function addAdminPanelViteAlias(string $contents): ?string
     {
         $updated = preg_replace(
             '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[/m',
             <<<'CONFIG'
 $1resolve: {
+$1    preserveSymlinks: true,
 $1    alias: {
 $1        '@admin-panel': fileURLToPath(
 $1            new URL('./vendor/parse/admin-panel/resources/js', import.meta.url),

@@ -128,3 +128,12 @@
         font: inherit;
     }
 }
+
+@layer components {
+    .crud-widget-sheet {
+        @apply flex flex-col gap-0 overflow-hidden rounded-xl p-0 outline-none;
+        @apply data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:left-auto;
+        @apply data-[side=right]:h-[calc(100svh-2rem)] data-[side=right]:w-[min(64rem,calc(100vw-20rem))];
+        @apply data-[side=right]:max-w-none data-[side=right]:sm:max-w-none;
+    }
+}

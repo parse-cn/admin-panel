@@ -24,7 +24,7 @@ export function PageHeader({
     description,
     tabs,
     activeTab,
-    tabsVariant = 'line',
+    tabsVariant = 'segmented',
 }: {
     title?: string;
     description?: string;
@@ -34,14 +34,20 @@ export function PageHeader({
 }) {
     if (!title && !description && !tabs?.length) return null;
     return (
-        <div className="flex flex-col gap-2">
-            {title && (
-                <h1 className="text-xl font-semibold tracking-tight">
-                    {title}
-                </h1>
-            )}
-            {description && (
-                <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="flex flex-col gap-4">
+            {(title || description) && (
+                <div className="flex flex-col gap-3">
+                    {title && (
+                        <h1 className="shrink-0 text-xl font-semibold tracking-tight">
+                            {title}
+                        </h1>
+                    )}
+                    {description && (
+                        <p className="text-sm text-muted-foreground">
+                            {description}
+                        </p>
+                    )}
+                </div>
             )}
             {tabs?.length ? (
                 <Tabs
@@ -53,7 +59,7 @@ export function PageHeader({
                         className={
                             tabsVariant === 'line'
                                 ? 'h-auto w-full justify-start gap-6 bg-transparent'
-                                : 'h-10 w-full gap-1 bg-muted p-1'
+                                : 'h-9 max-w-full justify-start gap-0.5 overflow-x-auto rounded-full border border-border/70 bg-muted/50 p-px'
                         }
                     >
                         {tabs.map((tab) => (
@@ -65,7 +71,7 @@ export function PageHeader({
                                 className={
                                     tabsVariant === 'line'
                                         ? 'flex-none justify-start px-0 py-2 text-base after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary after:opacity-0 after:transition-opacity data-active:after:opacity-100'
-                                        : 'flex-1 justify-center px-3 py-1.5 text-sm'
+                                        : 'h-8 min-w-25 flex-none justify-center rounded-full px-3 py-1.5 text-sm font-medium data-active:bg-primary data-active:text-primary-foreground data-active:shadow-none'
                                 }
                             >
                                 {tab.label}

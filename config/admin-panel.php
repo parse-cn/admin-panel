@@ -7,7 +7,7 @@ return [
         'web',
     ],
     'vite' => [
-        'entry' => 'vendor/parse/admin-panel/resources/js/app.tsx',
+        'entry' => 'resources/js/admin-panel.tsx',
     ],
     'app_shell' => 'default',
     'localization' => [
