@@ -98,16 +98,25 @@ export function ResourceDetailContent({
 }
 
 export function ResourceDetailSheet() {
-    const { createForm, createOpen, detail, detailId, edit, editId, routes } =
-        usePage<{
-            createForm?: Detail;
-            createOpen?: boolean;
-            detail?: Detail;
-            detailId?: string;
-            edit?: Detail;
-            editId?: string;
-            routes?: { index?: string };
-        }>().props;
+    const {
+        createForm,
+        createOpen,
+        detail,
+        detailId,
+        edit,
+        editId,
+        routes,
+        errors = {},
+    } = usePage<{
+        createForm?: Detail;
+        createOpen?: boolean;
+        detail?: Detail;
+        detailId?: string;
+        edit?: Detail;
+        editId?: string;
+        routes?: { index?: string };
+        errors?: Record<string, string>;
+    }>().props;
     const sheet = detailId
         ? { data: 'detail', detail }
         : editId
@@ -142,6 +151,14 @@ export function ResourceDetailSheet() {
                         <Suspense fallback={null}>
                             <ResourceDetailContent
                                 {...sheet.detail}
+                                props={{
+                                    ...sheet.detail.props,
+                                    ...((sheet.data === 'createForm' ||
+                                        sheet.data === 'edit') &&
+                                    Object.keys(errors).length > 0
+                                        ? { submitErrors: errors }
+                                        : {}),
+                                }}
                                 presentation="sheet"
                             />
                         </Suspense>
