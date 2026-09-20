@@ -4,8 +4,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@admin-panel/ui";
-import type { CrudField } from "../types";
+} from '@admin-panel/ui';
+import type { CrudField } from '../types';
 
 type Props = {
   error?: string;
@@ -31,7 +31,7 @@ export function SelectField({
         value: option.value,
       }))}
       name={field.name}
-      onValueChange={(next) => onChange(next ?? "")}
+      onValueChange={(next) => onChange(next ?? '')}
       required={field.required}
       value={value}
     >

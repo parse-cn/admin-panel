@@ -10,168 +10,164 @@ import type { CrudFormProps } from '@admin-panel/crud';
 import { preserveCurrentQuery } from '@admin-panel/crud/lib/preserve-query';
 
 type Detail = {
-    component: string;
-    props: Record<string, unknown>;
+  component: string;
+  props: Record<string, unknown>;
 };
 
 const packagePages = import.meta.glob<ResolvedComponent>(
-    '/packages/*/resources/js/admin-pages/**/*.tsx',
+  '/packages/*/resources/js/admin-pages/**/*.tsx',
 );
 const applicationPages = import.meta.glob<ResolvedComponent>([
-    '/resources/js/admin/**/*.tsx',
-    '!/resources/js/admin/**/components/**/*.tsx',
+  '/resources/js/admin/**/*.tsx',
+  '!/resources/js/admin/**/components/**/*.tsx',
 ]);
 const builtInPages = import.meta.glob<ResolvedComponent>('../pages/**/*.tsx');
 function componentName(path: string): string {
-    const roots = [
-        '/resources/js/admin/',
-        '/resources/js/admin-pages/',
-        '../pages/',
-    ];
-    const root = roots.find((candidate) => path.includes(candidate));
+  const roots = [
+    '/resources/js/admin/',
+    '/resources/js/admin-pages/',
+    '../pages/',
+  ];
+  const root = roots.find((candidate) => path.includes(candidate));
 
-    if (!root) {
-        throw new Error(
-            'An Admin Panel detail component path is not supported.',
-        );
-    }
+  if (!root) {
+    throw new Error('An Admin Panel detail component path is not supported.');
+  }
 
-    return path.slice(path.indexOf(root) + root.length).replace(/\.tsx$/, '');
+  return path.slice(path.indexOf(root) + root.length).replace(/\.tsx$/, '');
 }
 
 const detailComponents = new Map<
-    string,
-    LazyExoticComponent<ComponentType<Record<string, unknown>>>
+  string,
+  LazyExoticComponent<ComponentType<Record<string, unknown>>>
 >();
 
 for (const [path, loader] of [
-    ...Object.entries(applicationPages),
-    ...Object.entries(packagePages),
-    ...Object.entries(builtInPages),
+  ...Object.entries(applicationPages),
+  ...Object.entries(packagePages),
+  ...Object.entries(builtInPages),
 ]) {
-    detailComponents.set(
-        componentName(path),
-        lazy(async () => {
-            const module = await loader();
+  detailComponents.set(
+    componentName(path),
+    lazy(async () => {
+      const module = await loader();
 
-            return {
-                default: ('default' in module
-                    ? module.default
-                    : module) as ComponentType<Record<string, unknown>>,
-            };
-        }),
-    );
+      return {
+        default: ('default' in module
+          ? module.default
+          : module) as ComponentType<Record<string, unknown>>,
+      };
+    }),
+  );
 }
 
 export function ResourceDetailContent({
-    component,
-    presentation,
-    props,
+  component,
+  presentation,
+  props,
 }: Detail & {
-    presentation: 'page' | 'sheet';
+  presentation: 'page' | 'sheet';
 }) {
-    if (component === 'crud/show-content') {
-        return (
-            <CrudShowContent
-                {...(props as CrudShowProps)}
-                presentation={presentation}
-            />
-        );
-    }
+  if (component === 'crud/show-content') {
+    return (
+      <CrudShowContent
+        {...(props as CrudShowProps)}
+        presentation={presentation}
+      />
+    );
+  }
 
-    if (component === 'crud/form-content') {
-        return (
-            <CrudFormContent
-                {...(props as CrudFormProps)}
-                presentation={presentation}
-            />
-        );
-    }
+  if (component === 'crud/form-content') {
+    return (
+      <CrudFormContent
+        {...(props as CrudFormProps)}
+        presentation={presentation}
+      />
+    );
+  }
 
-    const Component = detailComponents.get(component);
+  const Component = detailComponents.get(component);
 
-    if (!Component) {
-        throw new Error('The Admin Panel detail component was not found.');
-    }
+  if (!Component) {
+    throw new Error('The Admin Panel detail component was not found.');
+  }
 
-    return createElement(Component, { ...props, presentation });
+  return createElement(Component, { ...props, presentation });
 }
 
 export function ResourceDetailSheet() {
-    const {
-        createForm,
-        createOpen,
-        detail,
-        detailId,
-        edit,
-        editId,
-        routes,
-        errors = {},
-        oldValues = {},
-    } = usePage<{
-        createForm?: Detail;
-        createOpen?: boolean;
-        detail?: Detail;
-        detailId?: string;
-        edit?: Detail;
-        editId?: string;
-        routes?: { index?: string };
-        errors?: Record<string, string>;
-        oldValues?: Record<string, unknown>;
-    }>().props;
-    const sheet = detailId
-        ? { data: 'detail', detail }
-        : editId
-          ? { data: 'edit', detail: edit }
-          : createOpen
-            ? { data: 'createForm', detail: createForm }
-            : null;
+  const {
+    createForm,
+    createOpen,
+    detail,
+    detailId,
+    edit,
+    editId,
+    routes,
+    errors = {},
+    oldValues = {},
+  } = usePage<{
+    createForm?: Detail;
+    createOpen?: boolean;
+    detail?: Detail;
+    detailId?: string;
+    edit?: Detail;
+    editId?: string;
+    routes?: { index?: string };
+    errors?: Record<string, string>;
+    oldValues?: Record<string, unknown>;
+  }>().props;
+  const sheet = detailId
+    ? { data: 'detail', detail }
+    : editId
+      ? { data: 'edit', detail: edit }
+      : createOpen
+        ? { data: 'createForm', detail: createForm }
+        : null;
 
-    if (!sheet || !routes?.index) {
-        return null;
-    }
+  if (!sheet || !routes?.index) {
+    return null;
+  }
 
-    return (
-        <Deferred data={sheet.data} fallback={<></>}>
-            {sheet.detail ? (
-                <Sheet
-                    open
-                    onOpenChange={(open: boolean) => {
-                        if (!open) {
-                            router.visit(preserveCurrentQuery(routes.index!), {
-                                preserveScroll: true,
-                                preserveState: true,
-                            });
-                        }
-                    }}
-                >
-                    <SheetContent
-                        side="right"
-                        showCloseButton
-                        className="crud-widget-sheet"
-                    >
-                        <Suspense fallback={null}>
-                            <ResourceDetailContent
-                                {...sheet.detail}
-                                props={{
-                                    ...sheet.detail.props,
-                                    ...((sheet.data === 'createForm' ||
-                                        sheet.data === 'edit') &&
-                                    Object.keys(errors).length > 0
-                                        ? { submitErrors: errors }
-                                        : {}),
-                                    ...((sheet.data === 'createForm' ||
-                                        sheet.data === 'edit') &&
-                                    Object.keys(oldValues).length > 0
-                                        ? { oldValues }
-                                        : {}),
-                                }}
-                                presentation="sheet"
-                            />
-                        </Suspense>
-                    </SheetContent>
-                </Sheet>
-            ) : null}
-        </Deferred>
-    );
+  return (
+    <Deferred data={sheet.data} fallback={<></>}>
+      {sheet.detail ? (
+        <Sheet
+          open
+          onOpenChange={(open: boolean) => {
+            if (!open) {
+              router.visit(preserveCurrentQuery(routes.index!), {
+                preserveScroll: true,
+                preserveState: true,
+              });
+            }
+          }}
+        >
+          <SheetContent
+            side="right"
+            showCloseButton
+            className="crud-widget-sheet"
+          >
+            <Suspense fallback={null}>
+              <ResourceDetailContent
+                {...sheet.detail}
+                props={{
+                  ...sheet.detail.props,
+                  ...((sheet.data === 'createForm' || sheet.data === 'edit') &&
+                  Object.keys(errors).length > 0
+                    ? { submitErrors: errors }
+                    : {}),
+                  ...((sheet.data === 'createForm' || sheet.data === 'edit') &&
+                  Object.keys(oldValues).length > 0
+                    ? { oldValues }
+                    : {}),
+                }}
+                presentation="sheet"
+              />
+            </Suspense>
+          </SheetContent>
+        </Sheet>
+      ) : null}
+    </Deferred>
+  );
 }

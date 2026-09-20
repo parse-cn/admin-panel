@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import type { ChangeEvent, ComponentProps } from "react"
+import type { ChangeEvent, ComponentProps } from 'react';
 import {
   createContext,
   useCallback,
@@ -8,7 +8,7 @@ import {
   useEffect,
   useMemo,
   useState,
-} from "react"
+} from 'react';
 import {
   addMonths,
   format,
@@ -16,157 +16,166 @@ import {
   isSameMonth,
   parse,
   subMonths,
-} from "date-fns"
-import type { DateRange, DayButton } from "react-day-picker"
+} from 'date-fns';
+import type { DateRange, DayButton } from 'react-day-picker';
 
-import { useIsMobile } from "@admin-panel/ui/hooks/use-mobile"
-import { cn } from "@admin-panel/ui/lib/utils"
-import { Button } from "@admin-panel/ui/components/ui/button"
-import { Calendar, CalendarDayButton } from "@admin-panel/ui/components/ui/calendar"
-import { Input } from "@admin-panel/ui/components/ui/input"
-import { ScrollArea } from "@admin-panel/ui/components/ui/scroll-area"
-import { Tabs, TabsList, TabsTrigger } from "@admin-panel/ui/components/ui/tabs"
-import { CornerUpLeftIcon, CornerUpRightIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react"
+import { useIsMobile } from '@admin-panel/ui/hooks/use-mobile';
+import { cn } from '@admin-panel/ui/lib/utils';
+import { Button } from '@admin-panel/ui/components/ui/button';
+import {
+  Calendar,
+  CalendarDayButton,
+} from '@admin-panel/ui/components/ui/calendar';
+import { Input } from '@admin-panel/ui/components/ui/input';
+import { ScrollArea } from '@admin-panel/ui/components/ui/scroll-area';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@admin-panel/ui/components/ui/tabs';
+import {
+  CornerUpLeftIcon,
+  CornerUpRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XIcon,
+} from 'lucide-react';
 
 export interface DateSelectorI18nConfig {
   // Labels
-  selectDate: string
-  apply: string
-  cancel: string
-  clear: string
-  today: string
+  selectDate: string;
+  apply: string;
+  cancel: string;
+  clear: string;
+  today: string;
   // Filter types
   filterTypes: {
-    is: string
-    before: string
-    after: string
-    between: string
-  }
+    is: string;
+    before: string;
+    after: string;
+    between: string;
+  };
   // Period types
   periodTypes: {
-    day: string
-    month: string
-    quarter: string
-    halfYear: string
-    year: string
-  }
+    day: string;
+    month: string;
+    quarter: string;
+    halfYear: string;
+    year: string;
+  };
   // Months
-  months: string[]
-  monthsShort: string[]
+  months: string[];
+  monthsShort: string[];
   // Quarters
-  quarters: string[]
+  quarters: string[];
   // Half years
-  halfYears: string[]
+  halfYears: string[];
   // Weekdays
-  weekdays: string[]
-  weekdaysShort: string[]
+  weekdays: string[];
+  weekdaysShort: string[];
   // Placeholders
-  placeholder: string
-  rangePlaceholder: string
+  placeholder: string;
+  rangePlaceholder: string;
 }
 
 export const DEFAULT_DATE_SELECTOR_I18N: DateSelectorI18nConfig = {
-  selectDate: "Select date",
-  apply: "Apply",
-  cancel: "Cancel",
-  clear: "Clear",
-  today: "Today",
+  selectDate: 'Select date',
+  apply: 'Apply',
+  cancel: 'Cancel',
+  clear: 'Clear',
+  today: 'Today',
   filterTypes: {
-    is: "is",
-    before: "before",
-    after: "after",
-    between: "between",
+    is: 'is',
+    before: 'before',
+    after: 'after',
+    between: 'between',
   },
   periodTypes: {
-    day: "Day",
-    month: "Month",
-    quarter: "Quarter",
-    halfYear: "Half-year",
-    year: "Year",
+    day: 'Day',
+    month: 'Month',
+    quarter: 'Quarter',
+    halfYear: 'Half-year',
+    year: 'Year',
   },
   months: [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ],
   monthsShort: [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ],
-  quarters: ["Q1", "Q2", "Q3", "Q4"],
-  halfYears: ["H1", "H2"],
+  quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+  halfYears: ['H1', 'H2'],
   weekdays: [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
   ],
-  weekdaysShort: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-  placeholder: "Select date...",
-  rangePlaceholder: "Select date range...",
-}
+  weekdaysShort: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+  placeholder: 'Select date...',
+  rangePlaceholder: 'Select date range...',
+};
 
 export type DateSelectorPeriodType =
-  | "day"
-  | "month"
-  | "quarter"
-  | "half-year"
-  | "year"
-export type DateSelectorFilterType = "is" | "before" | "after" | "between"
+  'day' | 'month' | 'quarter' | 'half-year' | 'year';
+export type DateSelectorFilterType = 'is' | 'before' | 'after' | 'between';
 
 export interface DateSelectorValue {
-  period: DateSelectorPeriodType
-  operator: DateSelectorFilterType
-  startDate?: Date
-  endDate?: Date
-  year?: number
-  month?: number
-  quarter?: number
-  halfYear?: number
-  rangeStart?: { year: number; value: number }
-  rangeEnd?: { year: number; value: number }
+  period: DateSelectorPeriodType;
+  operator: DateSelectorFilterType;
+  startDate?: Date;
+  endDate?: Date;
+  year?: number;
+  month?: number;
+  quarter?: number;
+  halfYear?: number;
+  rangeStart?: { year: number; value: number };
+  rangeEnd?: { year: number; value: number };
 }
 
 export interface DateSelectorContextValue {
-  i18n: DateSelectorI18nConfig
-  variant: "outline" | "default"
-  size: "sm" | "default" | "lg"
+  i18n: DateSelectorI18nConfig;
+  variant: 'outline' | 'default';
+  size: 'sm' | 'default' | 'lg';
 }
 
 const DateSelectorContext = createContext<DateSelectorContextValue>({
   i18n: DEFAULT_DATE_SELECTOR_I18N,
-  variant: "outline",
-  size: "default",
-})
+  variant: 'outline',
+  size: 'default',
+});
 
-export const useDateSelectorContext = () => useContext(DateSelectorContext)
+export const useDateSelectorContext = () => useContext(DateSelectorContext);
 
 export function formatDateValue(
   value: DateSelectorValue,
   i18n: DateSelectorI18nConfig = DEFAULT_DATE_SELECTOR_I18N,
-  dayDateFormat: string = "MM/dd/yyyy"
+  dayDateFormat: string = 'MM/dd/yyyy',
 ): string {
   const {
     period,
@@ -178,80 +187,80 @@ export function formatDateValue(
     halfYear,
     rangeStart,
     rangeEnd,
-  } = value
+  } = value;
 
-  if (period === "day") {
+  if (period === 'day') {
     if (startDate && endDate) {
-      return `${format(startDate, dayDateFormat)} - ${format(endDate, dayDateFormat)}`
+      return `${format(startDate, dayDateFormat)} - ${format(endDate, dayDateFormat)}`;
     }
     if (startDate) {
-      return format(startDate, dayDateFormat)
+      return format(startDate, dayDateFormat);
     }
-    return ""
+    return '';
   }
 
-  if (period === "month") {
+  if (period === 'month') {
     if (rangeStart && rangeEnd) {
-      return `${i18n.monthsShort[rangeStart.value]} ${rangeStart.year} - ${i18n.monthsShort[rangeEnd.value]} ${rangeEnd.year}`
+      return `${i18n.monthsShort[rangeStart.value]} ${rangeStart.year} - ${i18n.monthsShort[rangeEnd.value]} ${rangeEnd.year}`;
     }
     if (year !== undefined && month !== undefined) {
-      return `${i18n.monthsShort[month]} ${year}`
+      return `${i18n.monthsShort[month]} ${year}`;
     }
-    return ""
+    return '';
   }
 
-  if (period === "quarter") {
+  if (period === 'quarter') {
     if (rangeStart && rangeEnd) {
-      return `${i18n.quarters[rangeStart.value]} ${rangeStart.year} - ${i18n.quarters[rangeEnd.value]} ${rangeEnd.year}`
+      return `${i18n.quarters[rangeStart.value]} ${rangeStart.year} - ${i18n.quarters[rangeEnd.value]} ${rangeEnd.year}`;
     }
     if (year !== undefined && quarter !== undefined) {
-      return `${i18n.quarters[quarter]} ${year}`
+      return `${i18n.quarters[quarter]} ${year}`;
     }
-    return ""
+    return '';
   }
 
-  if (period === "half-year") {
+  if (period === 'half-year') {
     if (rangeStart && rangeEnd) {
-      return `${i18n.halfYears[rangeStart.value]} ${rangeStart.year} - ${i18n.halfYears[rangeEnd.value]} ${rangeEnd.year}`
+      return `${i18n.halfYears[rangeStart.value]} ${rangeStart.year} - ${i18n.halfYears[rangeEnd.value]} ${rangeEnd.year}`;
     }
     if (year !== undefined && halfYear !== undefined) {
-      return `${i18n.halfYears[halfYear]} ${year}`
+      return `${i18n.halfYears[halfYear]} ${year}`;
     }
-    return ""
+    return '';
   }
 
-  if (period === "year") {
+  if (period === 'year') {
     if (rangeStart && rangeEnd) {
-      return `${rangeStart.year} - ${rangeEnd.year}`
+      return `${rangeStart.year} - ${rangeEnd.year}`;
     }
     if (year !== undefined) {
-      return `${year}`
+      return `${year}`;
     }
-    return ""
+    return '';
   }
 
-  return ""
+  return '';
 }
 
 interface UseDateSelectorOptions {
-  value?: DateSelectorValue
-  onChange?: (value: DateSelectorValue) => void
-  defaultPeriodType?: DateSelectorPeriodType
-  defaultFilterType?: DateSelectorFilterType
-  presetMode?: DateSelectorFilterType
-  allowRange?: boolean
-  yearRange?: number
-  baseYear?: number
-  minYear?: number
-  maxYear?: number
-  periodTypes?: DateSelectorPeriodType[]
+  value?: DateSelectorValue;
+  onChange?: (value: DateSelectorValue) => void;
+  defaultPeriodType?: DateSelectorPeriodType;
+  defaultFilterType?: DateSelectorFilterType;
+  presetMode?: DateSelectorFilterType;
+  allowRange?: boolean;
+  yearRange?: number;
+  baseYear?: number;
+  minYear?: number;
+  maxYear?: number;
+  periodTypes?: DateSelectorPeriodType[];
 }
 
 export function useDateSelector({
   value,
   onChange,
-  defaultPeriodType = "day",
-  defaultFilterType = "is",
+  defaultPeriodType = 'day',
+  defaultFilterType = 'is',
   presetMode,
   allowRange = true,
   yearRange = 11,
@@ -260,63 +269,64 @@ export function useDateSelector({
   maxYear,
   periodTypes,
 }: UseDateSelectorOptions) {
-  const currentYear = baseYear ?? new Date().getFullYear()
+  const currentYear = baseYear ?? new Date().getFullYear();
 
   const validDefaultPeriodType = useMemo(() => {
-    if (!periodTypes || periodTypes.length === 0) return defaultPeriodType
-    if (periodTypes.includes(defaultPeriodType)) return defaultPeriodType
-    return periodTypes[0]
-  }, [periodTypes, defaultPeriodType])
+    if (!periodTypes || periodTypes.length === 0) return defaultPeriodType;
+    if (periodTypes.includes(defaultPeriodType)) return defaultPeriodType;
+    return periodTypes[0];
+  }, [periodTypes, defaultPeriodType]);
 
   // Use presetMode if provided, otherwise use value or default
-  const effectiveFilterType = presetMode ?? value?.operator ?? defaultFilterType
+  const effectiveFilterType =
+    presetMode ?? value?.operator ?? defaultFilterType;
 
   const [periodType, setPeriodType] = useState<DateSelectorPeriodType>(
-    value?.period || validDefaultPeriodType
-  )
+    value?.period || validDefaultPeriodType,
+  );
   const [filterType, setFilterType] =
-    useState<DateSelectorFilterType>(effectiveFilterType)
+    useState<DateSelectorFilterType>(effectiveFilterType);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    value?.startDate
-  )
+    value?.startDate,
+  );
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(
-    value?.endDate
-  )
+    value?.endDate,
+  );
   const [calendarMonth, setCalendarMonth] = useState(
-    value?.startDate || new Date()
-  )
+    value?.startDate || new Date(),
+  );
   const [selectedYear, setSelectedYear] = useState<number | undefined>(
-    value?.year
-  )
+    value?.year,
+  );
   const [selectedMonth, setSelectedMonth] = useState<number | undefined>(
-    value?.month
-  )
+    value?.month,
+  );
   const [selectedQuarter, setSelectedQuarter] = useState<number | undefined>(
-    value?.quarter
-  )
+    value?.quarter,
+  );
   const [selectedHalfYear, setSelectedHalfYear] = useState<number | undefined>(
-    value?.halfYear
-  )
+    value?.halfYear,
+  );
   const [rangeStart, setRangeStart] = useState<
     { year: number; value: number } | undefined
-  >(value?.rangeStart)
+  >(value?.rangeStart);
   const [rangeEnd, setRangeEnd] = useState<
     { year: number; value: number } | undefined
-  >(value?.rangeEnd)
-  const [hoverDate, setHoverDate] = useState<Date | undefined>()
+  >(value?.rangeEnd);
+  const [hoverDate, setHoverDate] = useState<Date | undefined>();
 
   const years = useMemo(() => {
     if (minYear !== undefined && maxYear !== undefined) {
       return Array.from(
         { length: maxYear - minYear + 1 },
-        (_, i) => minYear + i
-      )
+        (_, i) => minYear + i,
+      );
     }
     return Array.from(
       { length: yearRange },
-      (_, i) => currentYear - Math.floor(yearRange / 2) + i
-    )
-  }, [currentYear, yearRange, minYear, maxYear])
+      (_, i) => currentYear - Math.floor(yearRange / 2) + i,
+    );
+  }, [currentYear, yearRange, minYear, maxYear]);
 
   const currentValue = useMemo<DateSelectorValue>(
     () => ({
@@ -343,162 +353,162 @@ export function useDateSelector({
       selectedHalfYear,
       rangeStart,
       rangeEnd,
-    ]
-  )
+    ],
+  );
 
   const clearSelection = useCallback(() => {
-    setSelectedDate(undefined)
-    setSelectedEndDate(undefined)
-    setSelectedYear(undefined)
-    setSelectedMonth(undefined)
-    setSelectedQuarter(undefined)
-    setSelectedHalfYear(undefined)
-    setRangeStart(undefined)
-    setRangeEnd(undefined)
-  }, [])
+    setSelectedDate(undefined);
+    setSelectedEndDate(undefined);
+    setSelectedYear(undefined);
+    setSelectedMonth(undefined);
+    setSelectedQuarter(undefined);
+    setSelectedHalfYear(undefined);
+    setRangeStart(undefined);
+    setRangeEnd(undefined);
+  }, []);
 
   const handleDayClick = useCallback(
     (day: Date) => {
-      if (filterType === "between" && allowRange) {
+      if (filterType === 'between' && allowRange) {
         if (!selectedDate || (selectedDate && selectedEndDate)) {
-          setSelectedDate(day)
-          setSelectedEndDate(undefined)
+          setSelectedDate(day);
+          setSelectedEndDate(undefined);
         } else {
           if (isBefore(day, selectedDate)) {
-            setSelectedEndDate(selectedDate)
-            setSelectedDate(day)
+            setSelectedEndDate(selectedDate);
+            setSelectedDate(day);
           } else {
-            setSelectedEndDate(day)
+            setSelectedEndDate(day);
           }
         }
       } else {
-        setSelectedDate(day)
-        setSelectedEndDate(undefined)
+        setSelectedDate(day);
+        setSelectedEndDate(undefined);
       }
     },
-    [filterType, allowRange, selectedDate, selectedEndDate]
-  )
+    [filterType, allowRange, selectedDate, selectedEndDate],
+  );
 
   const handlePeriodSelect = useCallback(
     (year: number, value: number) => {
-      if (filterType === "between" && allowRange) {
+      if (filterType === 'between' && allowRange) {
         if (!rangeStart || (rangeStart && rangeEnd)) {
-          setRangeStart({ year, value })
-          setRangeEnd(undefined)
-          setSelectedYear(year)
-          if (periodType === "month") setSelectedMonth(value)
-          if (periodType === "quarter") setSelectedQuarter(value)
-          if (periodType === "half-year") setSelectedHalfYear(value)
+          setRangeStart({ year, value });
+          setRangeEnd(undefined);
+          setSelectedYear(year);
+          if (periodType === 'month') setSelectedMonth(value);
+          if (periodType === 'quarter') setSelectedQuarter(value);
+          if (periodType === 'half-year') setSelectedHalfYear(value);
         } else {
-          const startKey = rangeStart.year * 100 + rangeStart.value
-          const endKey = year * 100 + value
+          const startKey = rangeStart.year * 100 + rangeStart.value;
+          const endKey = year * 100 + value;
           if (endKey < startKey) {
-            setRangeEnd(rangeStart)
-            setRangeStart({ year, value })
+            setRangeEnd(rangeStart);
+            setRangeStart({ year, value });
           } else {
-            setRangeEnd({ year, value })
+            setRangeEnd({ year, value });
           }
         }
       } else {
-        setSelectedYear(year)
-        if (periodType === "month") setSelectedMonth(value)
-        if (periodType === "quarter") setSelectedQuarter(value)
-        if (periodType === "half-year") setSelectedHalfYear(value)
-        setRangeStart(undefined)
-        setRangeEnd(undefined)
+        setSelectedYear(year);
+        if (periodType === 'month') setSelectedMonth(value);
+        if (periodType === 'quarter') setSelectedQuarter(value);
+        if (periodType === 'half-year') setSelectedHalfYear(value);
+        setRangeStart(undefined);
+        setRangeEnd(undefined);
       }
     },
-    [filterType, allowRange, rangeStart, rangeEnd, periodType]
-  )
+    [filterType, allowRange, rangeStart, rangeEnd, periodType],
+  );
 
   const handleYearSelect = useCallback(
     (year: number) => {
-      if (filterType === "between" && allowRange) {
+      if (filterType === 'between' && allowRange) {
         if (!rangeStart || (rangeStart && rangeEnd)) {
-          setRangeStart({ year, value: 0 })
-          setRangeEnd(undefined)
-          setSelectedYear(year)
+          setRangeStart({ year, value: 0 });
+          setRangeEnd(undefined);
+          setSelectedYear(year);
         } else {
           if (year < rangeStart.year) {
-            setRangeEnd(rangeStart)
-            setRangeStart({ year, value: 0 })
+            setRangeEnd(rangeStart);
+            setRangeStart({ year, value: 0 });
           } else {
-            setRangeEnd({ year, value: 0 })
+            setRangeEnd({ year, value: 0 });
           }
         }
       } else {
-        setSelectedYear(year)
-        setRangeStart(undefined)
-        setRangeEnd(undefined)
+        setSelectedYear(year);
+        setRangeStart(undefined);
+        setRangeEnd(undefined);
       }
     },
-    [filterType, allowRange, rangeStart, rangeEnd]
-  )
+    [filterType, allowRange, rangeStart, rangeEnd],
+  );
 
   const handlePeriodTypeChange = useCallback(
     (type: DateSelectorPeriodType) => {
-      setPeriodType(type)
-      clearSelection()
+      setPeriodType(type);
+      clearSelection();
     },
-    [clearSelection]
-  )
+    [clearSelection],
+  );
 
   const handleFilterTypeChange = useCallback(
     (type: DateSelectorFilterType) => {
       // Don't allow changes if presetMode is set
-      if (presetMode !== undefined) return
-      setFilterType(type)
-      clearSelection()
+      if (presetMode !== undefined) return;
+      setFilterType(type);
+      clearSelection();
     },
-    [clearSelection, presetMode]
-  )
+    [clearSelection, presetMode],
+  );
 
   const isInRange = useCallback(
     (year: number, value: number) => {
-      if (!rangeStart || !rangeEnd) return false
-      const key = year * 100 + value
-      const startKey = rangeStart.year * 100 + rangeStart.value
-      const endKey = rangeEnd.year * 100 + rangeEnd.value
-      return key >= startKey && key <= endKey
+      if (!rangeStart || !rangeEnd) return false;
+      const key = year * 100 + value;
+      const startKey = rangeStart.year * 100 + rangeStart.value;
+      const endKey = rangeEnd.year * 100 + rangeEnd.value;
+      return key >= startKey && key <= endKey;
     },
-    [rangeStart, rangeEnd]
-  )
+    [rangeStart, rangeEnd],
+  );
 
   const isYearInRange = useCallback(
     (year: number) => {
-      if (!rangeStart || !rangeEnd) return false
-      return year >= rangeStart.year && year <= rangeEnd.year
+      if (!rangeStart || !rangeEnd) return false;
+      return year >= rangeStart.year && year <= rangeEnd.year;
     },
-    [rangeStart, rangeEnd]
-  )
+    [rangeStart, rangeEnd],
+  );
 
   useEffect(() => {
     if (value) {
-      setPeriodType(value.period || validDefaultPeriodType)
+      setPeriodType(value.period || validDefaultPeriodType);
       // Use presetMode if provided, otherwise use value's operator or default
-      const newFilterType = presetMode ?? value.operator ?? defaultFilterType
-      setFilterType(newFilterType)
-      setSelectedDate(value.startDate)
-      setSelectedEndDate(value.endDate)
-      setSelectedYear(value.year)
-      setSelectedMonth(value.month)
-      setSelectedQuarter(value.quarter)
-      setSelectedHalfYear(value.halfYear)
-      setRangeStart(value.rangeStart)
-      setRangeEnd(value.rangeEnd)
+      const newFilterType = presetMode ?? value.operator ?? defaultFilterType;
+      setFilterType(newFilterType);
+      setSelectedDate(value.startDate);
+      setSelectedEndDate(value.endDate);
+      setSelectedYear(value.year);
+      setSelectedMonth(value.month);
+      setSelectedQuarter(value.quarter);
+      setSelectedHalfYear(value.halfYear);
+      setRangeStart(value.rangeStart);
+      setRangeEnd(value.rangeEnd);
     }
-  }, [value, validDefaultPeriodType, defaultFilterType, presetMode])
+  }, [value, validDefaultPeriodType, defaultFilterType, presetMode]);
 
   // Sync filterType when presetMode changes
   useEffect(() => {
     if (presetMode !== undefined) {
-      setFilterType(presetMode)
+      setFilterType(presetMode);
     }
-  }, [presetMode])
+  }, [presetMode]);
 
   useEffect(() => {
-    onChange?.(currentValue)
-  }, [currentValue, onChange])
+    onChange?.(currentValue);
+  }, [currentValue, onChange]);
 
   return {
     // State
@@ -533,16 +543,16 @@ export function useDateSelector({
     handleYearSelect,
     isInRange,
     isYearInRange,
-  }
+  };
 }
 
 interface DateSelectorFilterToggleProps {
-  value: DateSelectorFilterType
-  onChange: (value: DateSelectorFilterType) => void
-  showBetween?: boolean
-  showIs?: boolean
-  presetMode?: DateSelectorFilterType
-  className?: string
+  value: DateSelectorFilterType;
+  onChange: (value: DateSelectorFilterType) => void;
+  showBetween?: boolean;
+  showIs?: boolean;
+  presetMode?: DateSelectorFilterType;
+  className?: string;
 }
 
 function DateSelectorFilterToggle({
@@ -553,24 +563,24 @@ function DateSelectorFilterToggle({
   presetMode,
   className,
 }: DateSelectorFilterToggleProps) {
-  const { i18n } = useDateSelectorContext()
-  const isDisabled = presetMode !== undefined
+  const { i18n } = useDateSelectorContext();
+  const isDisabled = presetMode !== undefined;
 
   return (
     <Tabs
       value={value}
       onValueChange={(newValue) => {
         if (!isDisabled && newValue) {
-          onChange(newValue as DateSelectorFilterType)
+          onChange(newValue as DateSelectorFilterType);
         }
       }}
       className={className}
     >
       <TabsList
         className={cn(
-          "bg-muted/80",
-          isDisabled && "pointer-events-none opacity-50",
-          className
+          'bg-muted/80',
+          isDisabled && 'pointer-events-none opacity-50',
+          className,
         )}
       >
         {showIs && (
@@ -607,17 +617,17 @@ function DateSelectorFilterToggle({
         )}
       </TabsList>
     </Tabs>
-  )
+  );
 }
 
 interface DateSelectorDateSelectorPeriodTabsProps {
-  value: DateSelectorPeriodType
-  onChange: (value: DateSelectorPeriodType) => void
-  periodTypes?: DateSelectorPeriodType[]
-  className?: string
-  calendarMonth?: Date
-  onMonthChange?: (date: Date) => void
-  showNavigationButtons?: boolean
+  value: DateSelectorPeriodType;
+  onChange: (value: DateSelectorPeriodType) => void;
+  periodTypes?: DateSelectorPeriodType[];
+  className?: string;
+  calendarMonth?: Date;
+  onMonthChange?: (date: Date) => void;
+  showNavigationButtons?: boolean;
 }
 
 function DateSelectorPeriodTabs({
@@ -629,32 +639,32 @@ function DateSelectorPeriodTabs({
   onMonthChange,
   showNavigationButtons = false,
 }: DateSelectorDateSelectorPeriodTabsProps) {
-  const { i18n } = useDateSelectorContext()
+  const { i18n } = useDateSelectorContext();
 
   const tabs: { value: DateSelectorPeriodType; label: string }[] = [
-    { value: "day", label: i18n.periodTypes.day },
-    { value: "month", label: i18n.periodTypes.month },
-    { value: "quarter", label: i18n.periodTypes.quarter },
-    { value: "half-year", label: i18n.periodTypes.halfYear },
-    { value: "year", label: i18n.periodTypes.year },
-  ]
+    { value: 'day', label: i18n.periodTypes.day },
+    { value: 'month', label: i18n.periodTypes.month },
+    { value: 'quarter', label: i18n.periodTypes.quarter },
+    { value: 'half-year', label: i18n.periodTypes.halfYear },
+    { value: 'year', label: i18n.periodTypes.year },
+  ];
 
   const filteredTabs = periodTypes
     ? tabs.filter((tab) => periodTypes.includes(tab.value))
-    : tabs
+    : tabs;
 
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3",
-        className
+        'flex flex-wrap items-center justify-between gap-3',
+        className,
       )}
     >
       <Tabs
         value={value}
         onValueChange={(newValue) => {
           if (newValue) {
-            onChange(newValue as DateSelectorPeriodType)
+            onChange(newValue as DateSelectorPeriodType);
           }
         }}
       >
@@ -672,21 +682,21 @@ function DateSelectorPeriodTabs({
         </TabsList>
       </Tabs>
       {showNavigationButtons &&
-        value === "day" &&
+        value === 'day' &&
         calendarMonth &&
         onMonthChange && (
           <div className="flex items-center">
             {(() => {
-              const today = new Date()
-              const isCurrentMonth = isSameMonth(calendarMonth, today)
+              const today = new Date();
+              const isCurrentMonth = isSameMonth(calendarMonth, today);
 
               // Only show today button if not on current month
               if (isCurrentMonth) {
-                return null
+                return null;
               }
 
               // Determine direction based on whether calendarMonth is in future or past
-              const isFuture = calendarMonth > today
+              const isFuture = calendarMonth > today;
 
               return (
                 <Button
@@ -695,15 +705,9 @@ function DateSelectorPeriodTabs({
                   onClick={() => onMonthChange(new Date())}
                   title={i18n.today}
                 >
-                  {isFuture ? (
-                    <CornerUpLeftIcon
-                    />
-                  ) : (
-                    <CornerUpRightIcon
-                    />
-                  )}
+                  {isFuture ? <CornerUpLeftIcon /> : <CornerUpRightIcon />}
                 </Button>
-              )
+              );
             })()}
             <Button
               variant="ghost"
@@ -722,20 +726,20 @@ function DateSelectorPeriodTabs({
           </div>
         )}
     </div>
-  )
+  );
 }
 
 interface DateSelectorDayPickerProps {
-  currentMonth: Date
-  selectedDate?: Date
-  selectedEndDate?: Date
-  onDayClick: (day: Date) => void
-  isRange: boolean
-  onDayHover?: (day: Date | undefined) => void
-  hoverDate?: Date
-  showTwoMonths?: boolean
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
-  className?: string
+  currentMonth: Date;
+  selectedDate?: Date;
+  selectedEndDate?: Date;
+  onDayClick: (day: Date) => void;
+  isRange: boolean;
+  onDayHover?: (day: Date | undefined) => void;
+  hoverDate?: Date;
+  showTwoMonths?: boolean;
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  className?: string;
 }
 
 function DateSelectorDayPicker({
@@ -750,8 +754,8 @@ function DateSelectorDayPicker({
   weekStartsOn,
   className,
 }: DateSelectorDayPickerProps) {
-  const { i18n } = useDateSelectorContext()
-  const isMobile = useIsMobile()
+  const { i18n } = useDateSelectorContext();
+  const isMobile = useIsMobile();
 
   // Convert to react-day-picker format
   const selected: Date | DateRange | undefined = isRange
@@ -760,26 +764,26 @@ function DateSelectorDayPicker({
       : selectedDate
         ? { from: selectedDate, to: hoverDate || selectedDate }
         : undefined
-    : selectedDate
+    : selectedDate;
 
   const handleSelect = (date: Date | DateRange | undefined) => {
     if (!date) {
-      return
+      return;
     }
 
-    if (isRange && "from" in date) {
+    if (isRange && 'from' in date) {
       // For range mode
       if (date.from && !date.to) {
         // First click - set start date
-        onDayClick(date.from)
+        onDayClick(date.from);
       } else if (date.from && date.to) {
         // Range selected - set end date
-        onDayClick(date.to)
+        onDayClick(date.to);
       }
     } else if (!isRange && date instanceof Date) {
-      onDayClick(date)
+      onDayClick(date);
     }
-  }
+  };
 
   // Create custom DayButton component with hover support
   const CustomDayButton = useCallback(
@@ -789,35 +793,35 @@ function DateSelectorDayPicker({
           {...props}
           onMouseEnter={() => {
             if (isRange && onDayHover && props.day) {
-              onDayHover(props.day.date)
+              onDayHover(props.day.date);
             }
           }}
           onMouseLeave={() => {
             if (isRange && onDayHover) {
-              onDayHover(undefined)
+              onDayHover(undefined);
             }
           }}
         />
-      )
+      );
     },
-    [isRange, onDayHover]
-  )
+    [isRange, onDayHover],
+  );
 
   // Create custom formatters for i18n
   const formatters = {
     formatWeekdayName: (date: Date) => {
-      const dayIndex = date.getDay()
-      return i18n.weekdaysShort[dayIndex] || i18n.weekdays[dayIndex]
+      const dayIndex = date.getDay();
+      return i18n.weekdaysShort[dayIndex] || i18n.weekdays[dayIndex];
     },
     formatMonthCaption: (date: Date) => {
-      const monthIndex = date.getMonth()
-      const year = date.getFullYear()
-      return `${i18n.months[monthIndex]} ${year}`
+      const monthIndex = date.getMonth();
+      const year = date.getFullYear();
+      return `${i18n.months[monthIndex]} ${year}`;
     },
-  }
+  };
 
   return (
-    <div className={cn("flex w-full items-center justify-between", className)}>
+    <div className={cn('flex w-full items-center justify-between', className)}>
       {isRange ? (
         <Calendar
           month={currentMonth}
@@ -830,9 +834,9 @@ function DateSelectorDayPicker({
           formatters={formatters}
           className="w-full shrink-0 p-0"
           classNames={{
-            months: "flex flex-wrap items-start justify-between gap-5 w-full",
-            month: "flex flex-col items-center min-w-0 flex-1",
-            nav: "hidden",
+            months: 'flex flex-wrap items-start justify-between gap-5 w-full',
+            month: 'flex flex-col items-center min-w-0 flex-1',
+            nav: 'hidden',
           }}
           components={{
             DayButton: CustomDayButton,
@@ -850,9 +854,9 @@ function DateSelectorDayPicker({
           formatters={formatters}
           className="w-full shrink-0 p-0"
           classNames={{
-            months: "flex flex-wrap items-start justify-between gap-5 w-full",
-            month: "flex flex-col items-center min-w-0 flex-1",
-            nav: "hidden",
+            months: 'flex flex-wrap items-start justify-between gap-5 w-full',
+            month: 'flex flex-col items-center min-w-0 flex-1',
+            nav: 'hidden',
           }}
           components={{
             DayButton: CustomDayButton,
@@ -860,20 +864,20 @@ function DateSelectorDayPicker({
         />
       )}
     </div>
-  )
+  );
 }
 
 interface DateSelectorDateSelectorPeriodGridProps {
-  years: number[]
-  items: string[]
-  selectedYear?: number
-  selectedValue?: number
-  rangeStart?: { year: number; value: number }
-  rangeEnd?: { year: number; value: number }
-  isInRange: (year: number, value: number) => boolean
-  onSelect: (year: number, value: number) => void
-  columns: number
-  className?: string
+  years: number[];
+  items: string[];
+  selectedYear?: number;
+  selectedValue?: number;
+  rangeStart?: { year: number; value: number };
+  rangeEnd?: { year: number; value: number };
+  isInRange: (year: number, value: number) => boolean;
+  onSelect: (year: number, value: number) => void;
+  columns: number;
+  className?: string;
 }
 
 function DateSelectorPeriodGrid({
@@ -889,7 +893,7 @@ function DateSelectorPeriodGrid({
   className,
 }: DateSelectorDateSelectorPeriodGridProps) {
   return (
-    <div className={cn("w-full space-y-6", className)}>
+    <div className={cn('w-full space-y-6', className)}>
       {years.map((year) => (
         <div key={year}>
           <div className="text-muted-foreground mb-3 text-sm font-medium">
@@ -903,12 +907,12 @@ function DateSelectorPeriodGrid({
           >
             {items.map((item, index) => {
               const isSelected =
-                selectedYear === year && selectedValue === index
+                selectedYear === year && selectedValue === index;
               const isRangeStart =
-                rangeStart?.year === year && rangeStart?.value === index
+                rangeStart?.year === year && rangeStart?.value === index;
               const isRangeEnd =
-                rangeEnd?.year === year && rangeEnd?.value === index
-              const inRange = isInRange(year, index)
+                rangeEnd?.year === year && rangeEnd?.value === index;
+              const inRange = isInRange(year, index);
 
               return (
                 <Button
@@ -916,37 +920,37 @@ function DateSelectorPeriodGrid({
                   size="sm"
                   variant={
                     isSelected || isRangeStart || isRangeEnd
-                      ? "default"
-                      : "outline"
+                      ? 'default'
+                      : 'outline'
                   }
                   className={cn(
                     inRange &&
                       !isSelected &&
                       !isRangeStart &&
                       !isRangeEnd &&
-                      "bg-accent dark:bg-accent/60"
+                      'bg-accent dark:bg-accent/60',
                   )}
                   onClick={() => onSelect(year, index)}
                 >
                   {item}
                 </Button>
-              )
+              );
             })}
           </div>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 interface DateSelectorYearListProps {
-  years: number[]
-  selectedYear?: number
-  rangeStart?: { year: number; value: number }
-  rangeEnd?: { year: number; value: number }
-  isYearInRange: (year: number) => boolean
-  onSelect: (year: number) => void
-  className?: string
+  years: number[];
+  selectedYear?: number;
+  rangeStart?: { year: number; value: number };
+  rangeEnd?: { year: number; value: number };
+  isYearInRange: (year: number) => boolean;
+  onSelect: (year: number) => void;
+  className?: string;
 }
 
 function DateSelectorYearList({
@@ -959,58 +963,58 @@ function DateSelectorYearList({
   className,
 }: DateSelectorYearListProps) {
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)}>
+    <div className={cn('grid grid-cols-2 gap-2', className)}>
       {years.map((year) => {
-        const isSelected = selectedYear === year && !rangeStart && !rangeEnd
-        const isRangeStart = rangeStart?.year === year
-        const isRangeEnd = rangeEnd?.year === year
-        const inRange = isYearInRange(year)
+        const isSelected = selectedYear === year && !rangeStart && !rangeEnd;
+        const isRangeStart = rangeStart?.year === year;
+        const isRangeEnd = rangeEnd?.year === year;
+        const inRange = isYearInRange(year);
 
         return (
           <Button
             key={year}
             size="sm"
             variant={
-              isSelected || isRangeStart || isRangeEnd ? "default" : "outline"
+              isSelected || isRangeStart || isRangeEnd ? 'default' : 'outline'
             }
             className={cn(
               inRange &&
                 !isSelected &&
                 !isRangeStart &&
                 !isRangeEnd &&
-                "bg-accent dark:bg-accent/60"
+                'bg-accent dark:bg-accent/60',
             )}
             onClick={() => onSelect(year)}
           >
             {year}
           </Button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 export interface DateSelectorProps {
-  value?: DateSelectorValue
-  onChange?: (value: DateSelectorValue) => void
-  allowRange?: boolean
-  periodTypes?: DateSelectorPeriodType[]
-  defaultPeriodType?: DateSelectorPeriodType
-  defaultFilterType?: DateSelectorFilterType
-  presetMode?: DateSelectorFilterType
-  showInput?: boolean
-  showTwoMonths?: boolean
-  label?: string
-  className?: string
-  yearRange?: number
-  baseYear?: number
-  minYear?: number
-  maxYear?: number
-  i18n?: Partial<DateSelectorI18nConfig>
-  inputHint?: string
-  dayDateFormat?: string
-  dayDateFormats?: string[]
-  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
+  value?: DateSelectorValue;
+  onChange?: (value: DateSelectorValue) => void;
+  allowRange?: boolean;
+  periodTypes?: DateSelectorPeriodType[];
+  defaultPeriodType?: DateSelectorPeriodType;
+  defaultFilterType?: DateSelectorFilterType;
+  presetMode?: DateSelectorFilterType;
+  showInput?: boolean;
+  showTwoMonths?: boolean;
+  label?: string;
+  className?: string;
+  yearRange?: number;
+  baseYear?: number;
+  minYear?: number;
+  maxYear?: number;
+  i18n?: Partial<DateSelectorI18nConfig>;
+  inputHint?: string;
+  dayDateFormat?: string;
+  dayDateFormats?: string[];
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 export function DateSelector({
@@ -1018,8 +1022,8 @@ export function DateSelector({
   onChange,
   allowRange = true,
   periodTypes,
-  defaultPeriodType = "day",
-  defaultFilterType = "is",
+  defaultPeriodType = 'day',
+  defaultFilterType = 'is',
   presetMode,
   showInput = true,
   showTwoMonths = true,
@@ -1031,14 +1035,14 @@ export function DateSelector({
   maxYear = 2026,
   i18n: i18nOverride,
   inputHint,
-  dayDateFormat = "MM/dd/yyyy",
+  dayDateFormat = 'MM/dd/yyyy',
   dayDateFormats,
   weekStartsOn,
 }: DateSelectorProps) {
   const mergedI18n = useMemo(
     () => ({ ...DEFAULT_DATE_SELECTOR_I18N, ...i18nOverride }),
-    [i18nOverride]
-  )
+    [i18nOverride],
+  );
 
   const selector = useDateSelector({
     value,
@@ -1052,7 +1056,7 @@ export function DateSelector({
     minYear,
     maxYear,
     periodTypes,
-  })
+  });
 
   const {
     periodType,
@@ -1079,126 +1083,126 @@ export function DateSelector({
     handleYearSelect,
     isInRange,
     isYearInRange,
-  } = selector
+  } = selector;
 
-  const displayValue = formatDateValue(currentValue, mergedI18n, dayDateFormat)
-  const [inputValue, setInputValue] = useState(displayValue)
-  const [isInputFocused, setIsInputFocused] = useState(false)
+  const displayValue = formatDateValue(currentValue, mergedI18n, dayDateFormat);
+  const [inputValue, setInputValue] = useState(displayValue);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Sync input value when displayValue changes (but not when user is typing)
   useEffect(() => {
     if (!isInputFocused) {
-      setInputValue(displayValue)
+      setInputValue(displayValue);
     }
-  }, [displayValue, isInputFocused])
+  }, [displayValue, isInputFocused]);
 
   // Compute date formats for parsing
   const dateFormats = useMemo(() => {
     if (dayDateFormats && dayDateFormats.length > 0) {
       // Use provided formats, with dayDateFormat first if not already included
-      const formats = [...dayDateFormats]
+      const formats = [...dayDateFormats];
       if (!formats.includes(dayDateFormat)) {
-        formats.unshift(dayDateFormat)
+        formats.unshift(dayDateFormat);
       }
-      return formats
+      return formats;
     }
     // Default formats: use dayDateFormat first, then common alternatives
     const defaultFormats = [
       dayDateFormat,
-      "dd/MM/yyyy",
-      "yyyy-MM-dd",
-      "MM-dd-yyyy",
-      "dd-MM-yyyy",
-    ]
+      'dd/MM/yyyy',
+      'yyyy-MM-dd',
+      'MM-dd-yyyy',
+      'dd-MM-yyyy',
+    ];
     // Remove duplicates while preserving order
-    return Array.from(new Set(defaultFormats))
-  }, [dayDateFormat, dayDateFormats])
+    return Array.from(new Set(defaultFormats));
+  }, [dayDateFormat, dayDateFormats]);
 
   // Parse input text to DateSelectorValue
   const parseInputValue = useCallback(
     (text: string): DateSelectorValue | null => {
-      if (!text.trim()) return null
+      if (!text.trim()) return null;
 
-      const trimmed = text.trim()
+      const trimmed = text.trim();
 
       // Try parsing as year (e.g., "2025")
-      const yearMatch = trimmed.match(/^\d{4}$/)
+      const yearMatch = trimmed.match(/^\d{4}$/);
       if (yearMatch) {
-        const year = parseInt(yearMatch[0])
+        const year = parseInt(yearMatch[0]);
         if (year >= 1900 && year <= 2100) {
           return {
-            period: "year",
+            period: 'year',
             operator: presetMode ?? filterType,
             year,
-          }
+          };
         }
       }
 
       // Try parsing as quarter (e.g., "Q4", "Q1 2025")
-      const quarterMatch = trimmed.match(/^Q([1-4])(?:\s+(\d{4}))?$/i)
+      const quarterMatch = trimmed.match(/^Q([1-4])(?:\s+(\d{4}))?$/i);
       if (quarterMatch) {
-        const quarter = parseInt(quarterMatch[1]) - 1
+        const quarter = parseInt(quarterMatch[1]) - 1;
         const year = quarterMatch[2]
           ? parseInt(quarterMatch[2])
-          : new Date().getFullYear()
+          : new Date().getFullYear();
         if (year >= 1900 && year <= 2100) {
           return {
-            period: "quarter",
+            period: 'quarter',
             operator: presetMode ?? filterType,
             year,
             quarter,
-          }
+          };
         }
       }
 
       // Try parsing as date using computed formats
       for (const dateFormat of dateFormats) {
         try {
-          const parsed = parse(trimmed, dateFormat, new Date())
+          const parsed = parse(trimmed, dateFormat, new Date());
           if (!isNaN(parsed.getTime())) {
             return {
-              period: "day",
+              period: 'day',
               operator: presetMode ?? filterType,
               startDate: parsed,
-            }
+            };
           }
         } catch {
           // Continue to next format
         }
       }
 
-      return null
+      return null;
     },
-    [filterType, presetMode, dateFormats]
-  )
+    [filterType, presetMode, dateFormats],
+  );
 
   const handleInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value
-      setInputValue(newValue)
+      const newValue = e.target.value;
+      setInputValue(newValue);
 
       // Try to parse the input
-      const parsed = parseInputValue(newValue)
+      const parsed = parseInputValue(newValue);
       if (parsed) {
-        onChange?.(parsed)
+        onChange?.(parsed);
       }
     },
-    [onChange, parseInputValue]
-  )
+    [onChange, parseInputValue],
+  );
 
   const handleInputBlur = useCallback(() => {
-    setIsInputFocused(false)
+    setIsInputFocused(false);
     // Reset to display value if parsing failed
     if (!parseInputValue(inputValue)) {
-      setInputValue(displayValue)
+      setInputValue(displayValue);
     }
-  }, [inputValue, displayValue, parseInputValue])
+  }, [inputValue, displayValue, parseInputValue]);
 
   return (
     <DateSelectorContext.Provider
-      value={{ i18n: mergedI18n, variant: "outline", size: "default" }}
+      value={{ i18n: mergedI18n, variant: 'outline', size: 'default' }}
     >
-      <div className={cn("w-full space-y-4 sm:w-[470px]", className)}>
+      <div className={cn('w-full space-y-4 sm:w-[470px]', className)}>
         <div className="flex flex-wrap items-center gap-3">
           {label && (
             <h3 className="text-sm font-medium" data-slot="data-selector-label">
@@ -1231,11 +1235,11 @@ export function DateSelector({
                 onClick={clearSelection}
                 className={cn(
                   // Base Styles
-                  "rounded-xs absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer",
+                  'rounded-xs absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer',
                   // Visual States
-                  "opacity-70 transition-opacity hover:opacity-100",
+                  'opacity-70 transition-opacity hover:opacity-100',
                   // Focus States
-                  "ring-offset-background focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                  'ring-offset-background focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
                 )}
               >
                 <XIcon className="size-4" />
@@ -1249,17 +1253,17 @@ export function DateSelector({
           periodTypes={periodTypes}
           calendarMonth={calendarMonth}
           onMonthChange={setCalendarMonth}
-          showNavigationButtons={periodType === "day"}
+          showNavigationButtons={periodType === 'day'}
         />
 
-        {periodType === "day" ? (
+        {periodType === 'day' ? (
           <div className="w-full pb-1">
             <DateSelectorDayPicker
               currentMonth={calendarMonth}
               selectedDate={selectedDate}
               selectedEndDate={selectedEndDate}
               onDayClick={handleDayClick}
-              isRange={filterType === "between" && allowRange}
+              isRange={filterType === 'between' && allowRange}
               onDayHover={setHoverDate}
               hoverDate={hoverDate}
               showTwoMonths={showTwoMonths}
@@ -1269,7 +1273,7 @@ export function DateSelector({
         ) : (
           <div className="-mr-3 w-full">
             <ScrollArea key={periodType} className="h-[200px] w-full pe-3">
-              {periodType === "month" && (
+              {periodType === 'month' && (
                 <DateSelectorPeriodGrid
                   years={years}
                   items={mergedI18n.monthsShort}
@@ -1283,7 +1287,7 @@ export function DateSelector({
                 />
               )}
 
-              {periodType === "quarter" && (
+              {periodType === 'quarter' && (
                 <DateSelectorPeriodGrid
                   years={years}
                   items={mergedI18n.quarters}
@@ -1297,7 +1301,7 @@ export function DateSelector({
                 />
               )}
 
-              {periodType === "half-year" && (
+              {periodType === 'half-year' && (
                 <DateSelectorPeriodGrid
                   years={years}
                   items={mergedI18n.halfYears}
@@ -1311,7 +1315,7 @@ export function DateSelector({
                 />
               )}
 
-              {periodType === "year" && (
+              {periodType === 'year' && (
                 <DateSelectorYearList
                   years={years}
                   selectedYear={selectedYear}
@@ -1326,5 +1330,5 @@ export function DateSelector({
         )}
       </div>
     </DateSelectorContext.Provider>
-  )
+  );
 }

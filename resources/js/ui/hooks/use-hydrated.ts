@@ -9,5 +9,5 @@ const getServerSnapshot = () => false;
  * rendered tree without requiring a second effect-driven state update.
  */
 export function useHydrated(): boolean {
-    return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

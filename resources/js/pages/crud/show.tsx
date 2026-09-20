@@ -6,27 +6,27 @@ import { AdminPanelLayout } from '../../layouts/admin-panel-layout';
 import type { AdminPanelPageProps } from '../../types';
 
 export default function CrudShowPage(
-    props: CrudShowProps & { detailComponent: string },
+  props: CrudShowProps & { detailComponent: string },
 ) {
-    const { auth, navigation } = usePage<AdminPanelPageProps>().props;
+  const { auth, navigation } = usePage<AdminPanelPageProps>().props;
 
-    return (
-        <AdminPanelLayout
-            navigation={navigation}
-            parent={{
-                href: props.routes.index,
-                title: props.resource.title,
-            }}
-            title={props.resource.singularLabel}
-            user={auth.user ?? { email: null, name: null }}
-        >
-            <Suspense fallback={null}>
-                <ResourceDetailContent
-                    component={props.detailComponent}
-                    presentation="page"
-                    props={props}
-                />
-            </Suspense>
-        </AdminPanelLayout>
-    );
+  return (
+    <AdminPanelLayout
+      navigation={navigation}
+      parent={{
+        href: props.routes.index,
+        title: props.resource.title,
+      }}
+      title={props.resource.singularLabel}
+      user={auth.user ?? { email: null, name: null }}
+    >
+      <Suspense fallback={null}>
+        <ResourceDetailContent
+          component={props.detailComponent}
+          presentation="page"
+          props={props}
+        />
+      </Suspense>
+    </AdminPanelLayout>
+  );
 }

@@ -1,7 +1,7 @@
-import { Head, Link, useForm } from "@inertiajs/react";
-import { ArrowLeftIcon } from "lucide-react";
-import type { FormEvent } from "react";
-import { useState } from "react";
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeftIcon } from 'lucide-react';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
 import {
   Button,
   FieldGroup,
@@ -11,9 +11,9 @@ import {
   FrameHeader,
   FramePanel,
   FrameTitle,
-} from "@admin-panel/ui";
-import { useCrudI18n } from "../../i18n/crud-i18n";
-import { CrudFormField } from "./crud-form-field";
+} from '@admin-panel/ui';
+import { useCrudI18n } from '../../i18n/crud-i18n';
+import { CrudFormField } from './crud-form-field';
 import type {
   CrudDefinition,
   CrudField,
@@ -21,15 +21,15 @@ import type {
   CrudFormData,
   CrudRecord,
   CrudRoutes,
-} from "./types";
+} from './types';
 
-export type { CrudFormData } from "./types";
+export type { CrudFormData } from './types';
 
 export type CrudFormProps = {
   resource: CrudDefinition;
   record: CrudRecord | null;
   routes: CrudRoutes;
-  submit: { method: "post" | "put"; url: string };
+  submit: { method: 'post' | 'put'; url: string };
   oldValues?: Record<string, unknown>;
   onCancel?: () => void;
   onSubmit?: (values: CrudFormData) => void | Promise<void>;
@@ -38,16 +38,16 @@ export type CrudFormProps = {
 };
 
 function initialValue(field: CrudField, value: unknown): string | string[] {
-  if (field.type === "boolean")
-    return value === true || value === 1 || value === "1" ? "1" : "0";
-  if (field.type === "ip-list")
+  if (field.type === 'boolean')
+    return value === true || value === 1 || value === '1' ? '1' : '0';
+  if (field.type === 'ip-list')
     return Array.isArray(value)
       ? value.map(String)
-      : String(value ?? "")
+      : String(value ?? '')
           .split(/[\n,]+/)
           .map((item) => item.trim())
           .filter(Boolean);
-  return String(value ?? "");
+  return String(value ?? '');
 }
 
 export function CrudForm({
@@ -60,11 +60,11 @@ export function CrudForm({
   onSubmit,
   submitErrors,
   submitting,
-  presentation = "page",
-}: CrudFormProps & { presentation?: "page" | "sheet" }) {
+  presentation = 'page',
+}: CrudFormProps & { presentation?: 'page' | 'sheet' }) {
   const { t } = useCrudI18n();
   const fields = resource.fields.flatMap((item) =>
-    "fields" in item ? item.fields : [item],
+    'fields' in item ? item.fields : [item],
   );
   const form = useForm<CrudFormData>(
     Object.fromEntries(
@@ -83,8 +83,8 @@ export function CrudForm({
     new Set(),
   );
   const editing = record !== null;
-  const isSheet = presentation === "sheet";
-  const title = t(editing ? "crud.form.edit_title" : "crud.form.add_title", {
+  const isSheet = presentation === 'sheet';
+  const title = t(editing ? 'crud.form.edit_title' : 'crud.form.add_title', {
     resource: resource.singularLabel,
   });
   const returnUrl = isSheet
@@ -98,7 +98,7 @@ export function CrudForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (onSubmit) void onSubmit(form.data);
-    else if (submit.method === "put") form.put(submit.url);
+    else if (submit.method === 'put') form.put(submit.url);
     else form.post(submit.url);
   }
 
@@ -110,10 +110,10 @@ export function CrudForm({
     });
   }
 
-  const groupColumns: Record<CrudFieldGroup["columns"], string> = {
-    2: "md:grid-cols-2",
-    3: "md:grid-cols-3",
-    4: "md:grid-cols-4",
+  const groupColumns: Record<CrudFieldGroup['columns'], string> = {
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-3',
+    4: 'md:grid-cols-4',
   };
   const renderField = (field: CrudField) => (
     <CrudFormField
@@ -130,7 +130,7 @@ export function CrudForm({
   const fieldContent = (
     <FieldGroup>
       {resource.fields.map((item, index) =>
-        "fields" in item ? (
+        'fields' in item ? (
           <div
             className={`grid grid-cols-1 gap-5 ${groupColumns[item.columns]}`}
             key={`field-group-${index}`}
@@ -147,7 +147,7 @@ export function CrudForm({
     <>
       {onCancel ? (
         <Button onClick={onCancel} type="button" variant="outline">
-          {t("common.cancel")}
+          {t('common.cancel')}
         </Button>
       ) : (
         <Button
@@ -156,27 +156,29 @@ export function CrudForm({
           type="button"
           variant="outline"
         >
-          {t("common.cancel")}
+          {t('common.cancel')}
         </Button>
       )}
       <Button disabled={isSubmitting || uploadingFields.size > 0} type="submit">
         {isSubmitting
-          ? t("crud.form.saving")
+          ? t('crud.form.saving')
           : editing
-            ? t("crud.form.save_changes")
-            : t("crud.form.create", { resource: resource.singularLabel })}
+            ? t('crud.form.save_changes')
+            : t('crud.form.create', {
+                resource: resource.singularLabel,
+              })}
       </Button>
     </>
   );
 
   return (
     <>
-      <>{presentation === "page" && <Head title={title} />}</>
+      <>{presentation === 'page' && <Head title={title} />}</>
       <div
         className={
           isSheet
-            ? "flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
-            : "flex w-full flex-col gap-6"
+            ? 'flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden'
+            : 'flex w-full flex-col gap-6'
         }
       >
         {!isSheet && (
@@ -185,7 +187,7 @@ export function CrudForm({
             href={returnUrl}
           >
             <ArrowLeftIcon aria-hidden="true" className="size-4" />
-            {t("crud.form.back_to", {
+            {t('crud.form.back_to', {
               resource: editing ? resource.singularLabel : resource.title,
             })}
           </Link>
@@ -193,15 +195,15 @@ export function CrudForm({
         <div
           className={
             isSheet
-              ? "shrink-0 border-b px-5 py-4 pr-16 sm:px-6"
-              : "flex flex-col gap-1"
+              ? 'shrink-0 border-b px-5 py-4 pr-16 sm:px-6'
+              : 'flex flex-col gap-1'
           }
         >
           <h1
             className={
               isSheet
-                ? "text-lg font-semibold tracking-tight"
-                : "text-3xl font-semibold tracking-tight"
+                ? 'text-lg font-semibold tracking-tight'
+                : 'text-3xl font-semibold tracking-tight'
             }
           >
             {title}
@@ -209,20 +211,20 @@ export function CrudForm({
           <p className="text-sm text-muted-foreground">
             {t(
               editing
-                ? "crud.form.edit_description"
-                : "crud.form.create_description",
+                ? 'crud.form.edit_description'
+                : 'crud.form.create_description',
               { resource: resource.singularLabel },
             )}
           </p>
         </div>
         <form
-          className={isSheet ? "flex min-h-0 flex-1 flex-col" : undefined}
+          className={isSheet ? 'flex min-h-0 flex-1 flex-col' : undefined}
           onSubmit={handleSubmit}
         >
           <div
             className={
               isSheet
-                ? "min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6"
+                ? 'min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6'
                 : undefined
             }
           >
@@ -232,16 +234,18 @@ export function CrudForm({
               <Frame className="w-full" spacing="sm" variant="default">
                 <FrameHeader>
                   <FrameTitle>
-                    {t("crud.form.details_title", {
+                    {t('crud.form.details_title', {
                       resource: resource.singularLabel,
                     })}
                   </FrameTitle>
                   <FrameDescription className="text-xs">
                     {t(
                       editing
-                        ? "crud.form.details_edit_description"
-                        : "crud.form.details_create_description",
-                      { resource: resource.singularLabel },
+                        ? 'crud.form.details_edit_description'
+                        : 'crud.form.details_create_description',
+                      {
+                        resource: resource.singularLabel,
+                      },
                     )}
                   </FrameDescription>
                 </FrameHeader>
@@ -252,8 +256,8 @@ export function CrudForm({
           <FrameFooter
             className={
               isSheet
-                ? "shrink-0 flex-row justify-end gap-2 border-t px-5 py-4 sm:px-6"
-                : "mt-6 flex-row justify-end gap-2"
+                ? 'shrink-0 flex-row justify-end gap-2 border-t px-5 py-4 sm:px-6'
+                : 'mt-6 flex-row justify-end gap-2'
             }
           >
             {actions}

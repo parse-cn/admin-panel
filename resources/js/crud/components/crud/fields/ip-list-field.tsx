@@ -1,8 +1,8 @@
-import { XIcon } from "lucide-react";
-import type { KeyboardEvent } from "react";
-import { useState } from "react";
-import { Badge, Input } from "@admin-panel/ui";
-import type { CrudField } from "../types";
+import { XIcon } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
+import { useState } from 'react';
+import { Badge, Input } from '@admin-panel/ui';
+import type { CrudField } from '../types';
 
 type Props = {
   errors: Record<string, string>;
@@ -12,23 +12,23 @@ type Props = {
 };
 
 export function IpListField({ errors, field, value, onChange }: Props) {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const add = (raw: string) => {
     const next = raw
       .split(/[\n,]+/)
       .map((item) => item.trim())
       .filter(Boolean);
     if (next.length) onChange([...value, ...next]);
-    setInput("");
+    setInput('');
   };
   const error = Object.keys(errors).some(
     (key) => key === field.name || key.startsWith(`${field.name}.`),
   );
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" || event.key === ",") {
+    if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
       add(input);
-    } else if (event.key === "Backspace" && !input)
+    } else if (event.key === 'Backspace' && !input)
       onChange(value.slice(0, -1));
   };
   return (
@@ -39,7 +39,7 @@ export function IpListField({ errors, field, value, onChange }: Props) {
           return (
             <Badge
               className={
-                itemError ? "border-destructive text-destructive" : undefined
+                itemError ? 'border-destructive text-destructive' : undefined
               }
               key={`${ip}-${index}`}
               variant="secondary"
@@ -70,13 +70,13 @@ export function IpListField({ errors, field, value, onChange }: Props) {
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
           onPaste={(event) => {
-            const pasted = event.clipboardData.getData("text");
+            const pasted = event.clipboardData.getData('text');
             if (/[\n,]/.test(pasted)) {
               event.preventDefault();
               add(pasted);
             }
           }}
-          placeholder={field.placeholder ?? "Enter an IP address"}
+          placeholder={field.placeholder ?? 'Enter an IP address'}
           value={input}
         />
       </div>

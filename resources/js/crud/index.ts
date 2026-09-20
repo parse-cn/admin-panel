@@ -6,23 +6,23 @@ export { CrudIndexLayout } from './components/crud/crud-index-layout';
 export type { CrudIndexHeader } from './components/crud/types';
 export { CrudWidget } from './components/crud/crud-widget';
 export type {
-    CrudWidgetConfig,
-    CrudWidgetProps,
+  CrudWidgetConfig,
+  CrudWidgetProps,
 } from './components/crud/crud-widget';
 export { CrudShow } from './components/crud/crud-show';
 export type { CrudShowProps } from './components/crud/crud-show';
 export type {
-    CrudColumn,
-    CrudDefinition,
-    CrudFilter,
-    CrudFilterDefinition,
-    CrudFilterType,
-    CrudField,
-    CrudFieldGroup,
-    CrudFilters,
-    CrudOption,
-    CrudRecord,
-    CrudRecordAction,
-    CrudRoutes,
-    PaginatedRecords,
+  CrudColumn,
+  CrudDefinition,
+  CrudFilter,
+  CrudFilterDefinition,
+  CrudFilterType,
+  CrudField,
+  CrudFieldGroup,
+  CrudFilters,
+  CrudOption,
+  CrudRecord,
+  CrudRecordAction,
+  CrudRoutes,
+  PaginatedRecords,
 } from './components/crud/types';
