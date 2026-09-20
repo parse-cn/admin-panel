@@ -30,6 +30,7 @@ export type CrudFormProps = {
   record: CrudRecord | null;
   routes: CrudRoutes;
   submit: { method: "post" | "put"; url: string };
+  oldValues?: Record<string, unknown>;
   onCancel?: () => void;
   onSubmit?: (values: CrudFormData) => void | Promise<void>;
   submitErrors?: Record<string, string>;
@@ -54,6 +55,7 @@ export function CrudForm({
   record,
   routes,
   submit,
+  oldValues,
   onCancel,
   onSubmit,
   submitErrors,
@@ -68,7 +70,12 @@ export function CrudForm({
     Object.fromEntries(
       fields.map((field) => [
         field.name,
-        initialValue(field, record?.values[field.name]),
+        initialValue(
+          field,
+          oldValues && Object.hasOwn(oldValues, field.name)
+            ? oldValues[field.name]
+            : record?.values[field.name],
+        ),
       ]),
     ),
   );

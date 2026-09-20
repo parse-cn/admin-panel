@@ -102,6 +102,7 @@ final class CrudController extends Controller
             ...$resource::createProps(),
             'resource' => $this->definition($resource, $user),
             'record' => null,
+            'oldValues' => $request->old(),
             'routes' => $this->routes($resource),
             'submit' => ['method' => 'post', 'url' => route($resource::routeName().'.store')],
         ];
@@ -176,6 +177,7 @@ final class CrudController extends Controller
             ...$resource::editProps($model),
             'resource' => $this->definition($resource, $user),
             'record' => $this->record($resource, $model, $user),
+            'oldValues' => $request->old(),
             'routes' => $this->routes($resource, $model),
             'submit' => [
                 'method' => 'put',
