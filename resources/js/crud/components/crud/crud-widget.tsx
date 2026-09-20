@@ -1,9 +1,11 @@
 import { useHttp, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { AlertDialog, Sheet, SheetContent } from '@admin-panel/ui';
+import { AlertDialog, Button, Sheet, SheetContent } from '@admin-panel/ui';
+import { Skeleton } from '@admin-panel/ui/components/ui/skeleton';
 import { useCrudData } from '../../hooks/use-crud-data';
 import type { CrudWidgetContextValue } from '../../hooks/use-crud-data';
+import { useCrudI18n } from '../../i18n/crud-i18n';
 import { DataGridView } from '../data-grid/data-grid-view';
 import { serializeFilters } from '../data-grid/use-data-grid-query';
 import { DeleteRecordDialogContent } from './delete-record-dialog';
@@ -51,6 +53,49 @@ type CrudWidgetBulkResponse = {
     count: number;
 };
 
+function CrudWidgetLoading() {
+    return (
+        <div className="w-full space-y-3" aria-busy="true">
+            <div className="flex items-center justify-between gap-4 px-1 py-2">
+                <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-56" />
+                </div>
+                <Skeleton className="h-9 w-24" />
+            </div>
+            <div className="rounded-lg border bg-card">
+                <div className="flex items-center gap-3 border-b p-3">
+                    <Skeleton className="h-9 w-64 max-w-full" />
+                    <Skeleton className="ml-auto h-9 w-20 shrink-0" />
+                </div>
+                <div className="space-y-3 p-3">
+                    <div className="grid grid-cols-4 gap-4 border-b pb-3">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <Skeleton className="h-4" key={index} />
+                        ))}
+                    </div>
+                    {Array.from({ length: 6 }).map((_, row) => (
+                        <div className="grid grid-cols-4 gap-4" key={row}>
+                            {Array.from({ length: 4 }).map((_, column) => (
+                                <Skeleton
+                                    className={
+                                        column === 0 ? 'h-5 w-3/4' : 'h-5'
+                                    }
+                                    key={column}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                <div className="flex items-center justify-between border-t p-3">
+                    <Skeleton className="h-8 w-36" />
+                    <Skeleton className="h-8 w-24" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function endpointFor(
     resource: string,
     endpoint: string | undefined,
@@ -92,9 +137,13 @@ export function CrudWidget({
     onCreated,
     onDeleted,
 }: CrudWidgetProps) {
+    const { t } = useCrudI18n();
     const { props } = usePage<PageProps>();
     const dataUrl = endpointFor(resource, endpoint, props.panel?.crudWidgetUrl);
-    const { data, refresh } = useCrudData(dataUrl, context);
+    const { data, hasError, processing, refresh } = useCrudData(
+        dataUrl,
+        context,
+    );
     const mutation = useHttp<
         Record<string, CrudWidgetContextValue>,
         { record?: CrudRecord }
@@ -187,15 +236,50 @@ export function CrudWidget({
     }
 
     if (!data || !definition) {
+        if (hasError) {
+            return (
+                <div className="rounded-lg border bg-card p-4 text-sm">
+                    <p className="text-muted-foreground">
+                        {t('crud.list.load_error')}
+                    </p>
+                    <Button
+                        className="mt-3"
+                        disabled={processing}
+                        onClick={() => void refresh()}
+                        size="sm"
+                        type="button"
+                    >
+                        {t('crud.list.retry')}
+                    </Button>
+                </div>
+            );
+        }
+
         return (
-            <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-                Loading…
-            </div>
+            <CrudWidgetLoading />
         );
     }
 
     return (
         <>
+            {hasError && (
+                <div
+                    className="mb-3 flex items-center justify-between gap-3 rounded-lg border bg-card p-3 text-sm"
+                    role="alert"
+                >
+                    <span className="text-muted-foreground">
+                        {t('crud.list.load_error')}
+                    </span>
+                    <Button
+                        disabled={processing}
+                        onClick={() => void refresh()}
+                        size="sm"
+                        type="button"
+                    >
+                        {t('crud.list.retry')}
+                    </Button>
+                </div>
+            )}
             <DataGridView
                 resource={definition}
                 records={{
@@ -252,6 +336,7 @@ export function CrudWidget({
                         }),
                 }}
                 headerActions={headerActions}
+                isLoading={processing}
                 showSearch={config.showSearch ?? definition.showSearch ?? true}
                 showFilters={
                     config.showFilters ?? definition.showFilters ?? false

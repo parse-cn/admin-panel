@@ -67,6 +67,7 @@ type DataGridViewProps = {
     showPagination?: boolean;
     enableSelection?: boolean;
     headerActions?: ReactNode;
+    isLoading?: boolean;
 };
 
 export function DataGridView({
@@ -82,6 +83,7 @@ export function DataGridView({
     showPagination = true,
     enableSelection = true,
     headerActions,
+    isLoading = false,
 }: DataGridViewProps) {
     const { t } = useCrudI18n();
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -307,6 +309,7 @@ export function DataGridView({
         <ReuiDataGrid
             table={table}
             recordCount={records.total}
+            isLoading={isLoading}
             emptyMessage={t('crud.list.empty', {
                 resource: resource.title,
             })}

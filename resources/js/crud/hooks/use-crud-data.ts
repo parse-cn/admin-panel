@@ -34,6 +34,7 @@ export function useCrudData(
 ) {
     const request = useHttp<CrudWidgetQuery, CrudWidgetData>({ context });
     const [data, setData] = useState<CrudWidgetData | null>(null);
+    const [hasError, setHasError] = useState(false);
     const requestRef = useRef(request);
     const contextRef = useRef(context);
     const contextKey = JSON.stringify(context);
@@ -47,11 +48,15 @@ export function useCrudData(
         async (query: Omit<CrudWidgetQuery, 'context'> = {}) => {
             const activeRequest = requestRef.current;
 
+            setHasError(false);
             activeRequest.transform(() => ({
                 context: contextRef.current,
                 ...query,
             }));
-            const response = await activeRequest.get(url);
+            const response = await activeRequest.get(url, {
+                onHttpException: () => setHasError(true),
+                onNetworkError: () => setHasError(true),
+            });
             setData(response);
 
             return response;
@@ -63,5 +68,5 @@ export function useCrudData(
         void refresh();
     }, [contextKey, refresh]);
 
-    return { ...request, data, refresh };
+    return { ...request, data, hasError, refresh };
 }

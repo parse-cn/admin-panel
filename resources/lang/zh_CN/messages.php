@@ -117,6 +117,10 @@ return [
         'default_name' => '管理面板',
     ],
     'crud' => [
+        'list' => [
+            'load_error' => '列表加载失败，请稍后重试。',
+            'retry' => '重试',
+        ],
         'actions' => [
             'add' => '新增:resource',
             'delete' => '删除',
