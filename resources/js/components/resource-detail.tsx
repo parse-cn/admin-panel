@@ -107,6 +107,7 @@ export function ResourceDetailSheet() {
         editId,
         routes,
         errors = {},
+        oldValues = {},
     } = usePage<{
         createForm?: Detail;
         createOpen?: boolean;
@@ -116,6 +117,7 @@ export function ResourceDetailSheet() {
         editId?: string;
         routes?: { index?: string };
         errors?: Record<string, string>;
+        oldValues?: Record<string, unknown>;
     }>().props;
     const sheet = detailId
         ? { data: 'detail', detail }
@@ -157,6 +159,11 @@ export function ResourceDetailSheet() {
                                         sheet.data === 'edit') &&
                                     Object.keys(errors).length > 0
                                         ? { submitErrors: errors }
+                                        : {}),
+                                    ...((sheet.data === 'createForm' ||
+                                        sheet.data === 'edit') &&
+                                    Object.keys(oldValues).length > 0
+                                        ? { oldValues }
                                         : {}),
                                 }}
                                 presentation="sheet"

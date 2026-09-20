@@ -113,6 +113,7 @@ final class CrudController extends Controller
             return Inertia::render($resource::indexComponent(), [
                 ...$this->indexPageProps($request, $resource, $indexUser),
                 'createOpen' => true,
+                'oldValues' => $request->old(),
                 'createForm' => Inertia::defer(fn (): array => [
                     'component' => $resource::createSheetComponent(),
                     'props' => $createProps,
@@ -191,6 +192,7 @@ final class CrudController extends Controller
             return Inertia::render($resource::indexComponent(), [
                 ...$this->indexPageProps($request, $resource, $indexUser),
                 'editId' => (string) $model->getAttribute($resource::routeKeyName()),
+                'oldValues' => $request->old(),
                 'edit' => Inertia::defer(fn (): array => [
                     'component' => $resource::editSheetComponent(),
                     'props' => $editProps,
