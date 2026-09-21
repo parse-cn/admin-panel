@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightIcon, CheckIcon, CopyIcon, MinusIcon } from 'lucide-react';
-import { Avatar, AvatarImage, Badge } from '@admin-panel/ui';
+import { Amount, Avatar, AvatarImage, Badge, formatAmount } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
 import type { AdminPanelPageProps } from '../../../types';
 import type { CrudColumn, CrudRecord } from './types';
@@ -26,39 +26,6 @@ const detailLinkClassName =
 
 const detailLinkTextClassName =
   'relative truncate after:absolute after:right-0 after:bottom-0 after:left-0 after:h-px after:origin-left after:scale-x-0 after:bg-foreground after:opacity-0 after:transition-[transform,opacity] after:duration-280 after:ease-out group-hover/detail-link:after:scale-x-100 group-hover/detail-link:after:opacity-100 group-focus-visible/detail-link:after:scale-x-100 group-focus-visible/detail-link:after:opacity-100 motion-reduce:after:transition-none';
-
-const decimalFormatParts = new Intl.NumberFormat().formatToParts(1000.1);
-const decimalSeparator =
-  decimalFormatParts.find((part) => part.type === 'decimal')?.value ?? '.';
-const groupSeparator =
-  decimalFormatParts.find((part) => part.type === 'group')?.value ?? ',';
-
-function formatDecimal(value: unknown): {
-  formatted: string;
-  sign: -1 | 0 | 1;
-} | null {
-  const match = String(value)
-    .trim()
-    .match(/^([+-]?)(\d+)(?:\.(\d+))?$/);
-
-  if (!match) {
-    return null;
-  }
-
-  const integer = (match[2].replace(/^0+(?=\d)/, '') || '0').replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    groupSeparator,
-  );
-  const rawFraction = match[3] ?? '';
-  const fraction = rawFraction.replace(/0+$/, '').slice(0, 8).padEnd(2, '0');
-  const isZero = /^0+$/.test(match[2]) && /^0*$/.test(rawFraction);
-  const sign = isZero ? 0 : match[1] === '-' ? -1 : 1;
-
-  return {
-    formatted: `${integer}${decimalSeparator}${fraction}`,
-    sign,
-  };
-}
 
 export function CrudCell({
   column,
@@ -237,32 +204,30 @@ export function CrudCell({
   }
 
   if (column.type === 'decimal' || column.type === 'signed-decimal') {
-    const amount = formatDecimal(value);
+    const signed = column.type === 'signed-decimal';
+    const stringValue = typeof value === 'string' ? value : null;
+    const amount = formatAmount(stringValue);
 
     if (!amount) {
       return <span>{String(value)}</span>;
     }
 
-    const signed = column.type === 'signed-decimal';
-    const referenceAmount = column.signedColorReference
-      ? formatDecimal(record?.values[column.signedColorReference])
-      : null;
+    const referenceValue = column.signedColorReference
+      ? record?.values[column.signedColorReference]
+      : undefined;
+    const referenceAmount = formatAmount(
+      typeof referenceValue === 'string' ? referenceValue : null,
+    );
     const isInternalMovement = signed && referenceAmount?.sign === 0;
-    const className = isInternalMovement
-      ? 'font-medium text-blue-700 dark:text-blue-400'
-      : signed
-        ? amount.sign > 0
-          ? 'font-medium text-emerald-700 dark:text-emerald-400'
-          : amount.sign < 0
-            ? 'font-medium text-red-700 dark:text-red-400'
-            : 'text-muted-foreground'
-        : 'text-foreground';
 
     return (
-      <span className={`font-mono tabular-nums ${className}`}>
-        {signed && amount.sign > 0 ? '+' : amount.sign < 0 ? '−' : ''}
-        {amount.formatted}
-      </span>
+      <Amount
+        value={stringValue}
+        signed={signed}
+        internalMovement={isInternalMovement}
+        tone={signed ? 'auto' : 'none'}
+        className={signed ? undefined : 'text-foreground'}
+      />
     );
   }
 
