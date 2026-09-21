@@ -546,23 +546,27 @@ function DataGridTableFillFootCell() {
   );
 }
 
-function getDataGridTableFillColumnId<TData>(table: Table<TData>): string | null {
-  return (
-    table
-      .getVisibleLeafColumns()
-      .find((column) => column.columnDef.meta?.fill)?.id ?? null
-  );
+function getDataGridTableFillColumnIds<TData>(
+  table: Table<TData>,
+): Set<string> {
+  const ids = table
+    .getVisibleLeafColumns()
+    .filter((column) => column.columnDef.meta?.fill)
+    .map((column) => column.id);
+
+  return new Set(ids);
 }
 
 function getDataGridTableColWidthStyle<TData>(
   column: Column<TData>,
-  fillColumnId: string | null,
+  fillColumnIds: Set<string>,
 ): CSSProperties | undefined {
-  if (fillColumnId === null) return undefined;
+  if (fillColumnIds.size === 0) return undefined;
 
   // 1px acts as a floor in auto table layout: the column can still grow to
-  // fit its content, but it no longer competes for the surplus width.
-  return column.id === fillColumnId ? undefined : { width: '1px' };
+  // fit its content, but it no longer competes for the surplus width. Fill
+  // columns stay unconstrained and split the surplus proportionally.
+  return fillColumnIds.has(column.id) ? undefined : { width: '1px' };
 }
 
 function DataGridTableBase({ children }: { children: ReactNode }) {
@@ -571,11 +575,11 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
   const centerVisibleColumns = table.getCenterVisibleLeafColumns();
   const rightVisibleColumns = table.getRightVisibleLeafColumns();
   const hasRightPinnedColumns = hasDataGridTableRightPinnedColumns(table);
-  const fillColumnId =
+  const fillColumnIds =
     !props.tableLayout?.columnsResizable &&
     props.tableLayout?.width === 'auto'
-      ? getDataGridTableFillColumnId(table)
-      : null;
+      ? getDataGridTableFillColumnIds(table)
+      : new Set<string>();
 
   /**
    * Compute column widths as CSS custom properties once upfront (memoized).
@@ -640,7 +644,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
                   }
                 : props.tableLayout?.width === 'fixed'
                   ? { width: column.getSize() }
-                  : getDataGridTableColWidthStyle(column, fillColumnId)
+                  : getDataGridTableColWidthStyle(column, fillColumnIds)
             }
           />
         ))}
@@ -655,7 +659,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
                   }
                 : props.tableLayout?.width === 'fixed'
                   ? { width: column.getSize() }
-                  : getDataGridTableColWidthStyle(column, fillColumnId)
+                  : getDataGridTableColWidthStyle(column, fillColumnIds)
             }
           />
         ))}

@@ -92,17 +92,18 @@ export function DataGridView({
       resource.columns.filter((column) => !column.detailOnly && !column.hidden),
     [resource.columns],
   );
-  const fillColumnId = useMemo(() => {
-    const flexibleColumn =
-      visibleColumns.find(
-        (column) =>
-          column.type !== 'decimal' &&
-          column.type !== 'signed-decimal' &&
-          column.type !== 'datetime' &&
-          column.type !== 'badge',
-      ) ?? visibleColumns[0];
+  // The surplus width of an auto-layout table needs a home. Text-like columns
+  // (ids, titles, names) share it proportionally, so amount/date columns hug
+  // their content and stay flush toward the right edge, even without a
+  // row-actions column.
+  const fillColumnIds = useMemo(() => {
+    const flexibleTypes = new Set(['text', 'identity']);
 
-    return flexibleColumn?.name;
+    return new Set(
+      visibleColumns
+        .filter((column) => flexibleTypes.has(column.type))
+        .map((column) => column.name),
+    );
   }, [visibleColumns]);
   const {
     changeConditions,
@@ -210,7 +211,7 @@ export function DataGridView({
         },
         meta: {
           headerTitle: column.label,
-          fill: column.name === fillColumnId || undefined,
+          fill: fillColumnIds.has(column.name) || undefined,
           cellClassName:
             column.type === 'decimal' || column.type === 'signed-decimal'
               ? 'text-right whitespace-nowrap'
@@ -244,7 +245,7 @@ export function DataGridView({
           ]
         : []),
     ],
-    [callbacks, enableSelection, fillColumnId, resource, showRowActions, t, visibleColumns],
+    [callbacks, enableSelection, fillColumnIds, resource, showRowActions, t, visibleColumns],
   );
 
   const sorting: SortingState = filters.sort

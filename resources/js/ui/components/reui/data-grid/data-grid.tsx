@@ -21,6 +21,12 @@ declare module '@tanstack/react-table' {
     skeleton?: ReactNode;
     expandedContent?: (row: TData) => ReactNode;
     autoSize?: boolean;
+    /**
+     * Designates columns that absorb the table's surplus width in
+     * non-resizable `width: 'auto'` layouts. Columns without this flag hug
+     * their content, while flagged columns split the free space
+     * proportionally, keeping trailing columns flush toward the table edge.
+     */
     fill?: boolean;
   }
 }
