@@ -1,22 +1,22 @@
-import { useHttp, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import type { ReactNode } from 'react';
-import { AlertDialog, Button, Sheet, SheetContent } from '@admin-panel/ui';
-import { Skeleton } from '@admin-panel/ui/components/ui/skeleton';
-import { useCrudData } from '../../hooks/use-crud-data';
-import type { CrudWidgetContextValue } from '../../hooks/use-crud-data';
-import { useCrudI18n } from '../../i18n/crud-i18n';
-import { DataGridView } from '../data-grid/data-grid-view';
-import { serializeFilters } from '../data-grid/use-data-grid-query';
-import { DeleteRecordDialogContent } from './delete-record-dialog';
-import { CrudForm } from './crud-form';
-import { CrudShow } from './crud-show';
-import type { CrudRecord, CrudRecordAction } from './types';
+import { useHttp, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { AlertDialog, Button, Sheet, SheetContent } from "@admin-panel/ui";
+import { Skeleton } from "@admin-panel/ui/components/ui/skeleton";
+import { useCrudData } from "../../hooks/use-crud-data";
+import type { CrudWidgetContextValue } from "../../hooks/use-crud-data";
+import { useCrudI18n } from "../../i18n/crud-i18n";
+import { DataGridView } from "../data-grid/data-grid-view";
+import { serializeFilters } from "../data-grid/use-data-grid-query";
+import { DeleteRecordDialogContent } from "./delete-record-dialog";
+import { CrudForm } from "./crud-form";
+import { CrudShow } from "./crud-show";
+import type { CrudRecord, CrudRecordAction } from "./types";
 
-type WidgetMode = 'modal' | 'drawer' | 'inline';
+type WidgetMode = "modal" | "drawer" | "inline";
 
 export type CrudWidgetConfig = {
-  mode?: 'inline';
+  mode?: "inline";
   pageSize?: number;
   showSearch?: boolean;
   showFilters?: boolean;
@@ -25,8 +25,8 @@ export type CrudWidgetConfig = {
   showRowActions?: boolean;
   createMode?: WidgetMode;
   editMode?: WidgetMode;
-  showMode?: 'drawer';
-  stateMode?: 'url';
+  showMode?: "drawer";
+  stateMode?: "url";
   stateKey?: string;
 };
 
@@ -78,7 +78,7 @@ function CrudWidgetLoading() {
             <div className="grid grid-cols-4 gap-4" key={row}>
               {Array.from({ length: 4 }).map((_, column) => (
                 <Skeleton
-                  className={column === 0 ? 'h-5 w-3/4' : 'h-5'}
+                  className={column === 0 ? "h-5 w-3/4" : "h-5"}
                   key={column}
                 />
               ))}
@@ -103,8 +103,8 @@ function endpointFor(
     return endpoint;
   }
 
-  return (template ?? '/crud/__resource__/data').replace(
-    '__resource__',
+  return (template ?? "/crud/__resource__/data").replace(
+    "__resource__",
     encodeURIComponent(resource),
   );
 }
@@ -121,9 +121,9 @@ function withContext(
     }
   });
 
-  return query.toString() === ''
+  return query.toString() === ""
     ? url
-    : `${url}${url.includes('?') ? '&' : '?'}${query.toString()}`;
+    : `${url}${url.includes("?") ? "&" : "?"}${query.toString()}`;
 }
 
 export function CrudWidget({
@@ -144,7 +144,7 @@ export function CrudWidget({
     { record?: CrudRecord }
   >({});
   const bulkMutation = useHttp<CrudWidgetBulkRequest, CrudWidgetBulkResponse>({
-    action: '',
+    action: "",
     context,
     keys: [],
   });
@@ -179,6 +179,10 @@ export function CrudWidget({
       direction: data.filters.direction,
       filters: serializeFilters(data.filters.conditions),
     });
+
+    if (!response) {
+      return;
+    }
 
     if (!formRecord && response.record) {
       onCreated?.(response.record);
@@ -230,7 +234,7 @@ export function CrudWidget({
     if (hasError) {
       return (
         <div className="rounded-lg border bg-card p-4 text-sm">
-          <p className="text-muted-foreground">{t('crud.list.load_error')}</p>
+          <p className="text-muted-foreground">{t("crud.list.load_error")}</p>
           <Button
             className="mt-3"
             disabled={processing}
@@ -238,7 +242,7 @@ export function CrudWidget({
             size="sm"
             type="button"
           >
-            {t('crud.list.retry')}
+            {t("crud.list.retry")}
           </Button>
         </div>
       );
@@ -255,7 +259,7 @@ export function CrudWidget({
           role="alert"
         >
           <span className="text-muted-foreground">
-            {t('crud.list.load_error')}
+            {t("crud.list.load_error")}
           </span>
           <Button
             disabled={processing}
@@ -263,7 +267,7 @@ export function CrudWidget({
             size="sm"
             type="button"
           >
-            {t('crud.list.retry')}
+            {t("crud.list.retry")}
           </Button>
         </div>
       )}
@@ -357,12 +361,12 @@ export function CrudWidget({
         <SheetContent side="right" className="crud-widget-sheet">
           {formRecord !== undefined && (
             <CrudForm
-              key={formRecord?.key ?? 'create'}
+              key={formRecord?.key ?? "create"}
               resource={definition}
               record={formRecord}
               routes={data.routes}
               submit={{
-                method: formRecord ? 'put' : 'post',
+                method: formRecord ? "put" : "post",
                 url: formRecord ? formRecord.routes.edit! : data.routes.create!,
               }}
               presentation="sheet"
