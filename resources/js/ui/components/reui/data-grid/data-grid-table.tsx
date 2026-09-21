@@ -546,12 +546,36 @@ function DataGridTableFillFootCell() {
   );
 }
 
+function getDataGridTableFillColumnId<TData>(table: Table<TData>): string | null {
+  return (
+    table
+      .getVisibleLeafColumns()
+      .find((column) => column.columnDef.meta?.fill)?.id ?? null
+  );
+}
+
+function getDataGridTableColWidthStyle<TData>(
+  column: Column<TData>,
+  fillColumnId: string | null,
+): CSSProperties | undefined {
+  if (fillColumnId === null) return undefined;
+
+  // 1px acts as a floor in auto table layout: the column can still grow to
+  // fit its content, but it no longer competes for the surplus width.
+  return column.id === fillColumnId ? undefined : { width: '1px' };
+}
+
 function DataGridTableBase({ children }: { children: ReactNode }) {
   const { props, table } = useDataGrid();
   const leftVisibleColumns = table.getLeftVisibleLeafColumns();
   const centerVisibleColumns = table.getCenterVisibleLeafColumns();
   const rightVisibleColumns = table.getRightVisibleLeafColumns();
   const hasRightPinnedColumns = hasDataGridTableRightPinnedColumns(table);
+  const fillColumnId =
+    !props.tableLayout?.columnsResizable &&
+    props.tableLayout?.width === 'auto'
+      ? getDataGridTableFillColumnId(table)
+      : null;
 
   /**
    * Compute column widths as CSS custom properties once upfront (memoized).
@@ -616,7 +640,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
                   }
                 : props.tableLayout?.width === 'fixed'
                   ? { width: column.getSize() }
-                  : undefined
+                  : getDataGridTableColWidthStyle(column, fillColumnId)
             }
           />
         ))}
@@ -631,7 +655,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
                   }
                 : props.tableLayout?.width === 'fixed'
                   ? { width: column.getSize() }
-                  : undefined
+                  : getDataGridTableColWidthStyle(column, fillColumnId)
             }
           />
         ))}

@@ -21,6 +21,7 @@ declare module '@tanstack/react-table' {
     skeleton?: ReactNode;
     expandedContent?: (row: TData) => ReactNode;
     autoSize?: boolean;
+    fill?: boolean;
   }
 }
 

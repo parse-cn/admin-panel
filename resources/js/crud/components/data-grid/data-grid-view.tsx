@@ -92,6 +92,18 @@ export function DataGridView({
       resource.columns.filter((column) => !column.detailOnly && !column.hidden),
     [resource.columns],
   );
+  const fillColumnId = useMemo(() => {
+    const flexibleColumn =
+      visibleColumns.find(
+        (column) =>
+          column.type !== 'decimal' &&
+          column.type !== 'signed-decimal' &&
+          column.type !== 'datetime' &&
+          column.type !== 'badge',
+      ) ?? visibleColumns[0];
+
+    return flexibleColumn?.name;
+  }, [visibleColumns]);
   const {
     changeConditions,
     changeSearch,
@@ -198,6 +210,7 @@ export function DataGridView({
         },
         meta: {
           headerTitle: column.label,
+          fill: column.name === fillColumnId || undefined,
           cellClassName:
             column.type === 'decimal' || column.type === 'signed-decimal'
               ? 'text-right whitespace-nowrap'
@@ -231,7 +244,7 @@ export function DataGridView({
           ]
         : []),
     ],
-    [callbacks, enableSelection, resource, showRowActions, t, visibleColumns],
+    [callbacks, enableSelection, fillColumnId, resource, showRowActions, t, visibleColumns],
   );
 
   const sorting: SortingState = filters.sort
