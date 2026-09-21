@@ -170,6 +170,10 @@ export function CrudWidget({
       ? await mutation.put(withContext(formRecord.routes.edit!, context))
       : await mutation.post(withContext(data.routes.create!, context));
 
+    if (!response) {
+      return;
+    }
+
     setFormRecord(undefined);
     await refresh({
       page: data.records.current_page,
@@ -179,10 +183,6 @@ export function CrudWidget({
       direction: data.filters.direction,
       filters: serializeFilters(data.filters.conditions),
     });
-
-    if (!response) {
-      return;
-    }
 
     if (!formRecord && response.record) {
       onCreated?.(response.record);
