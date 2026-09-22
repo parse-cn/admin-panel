@@ -12,68 +12,10 @@ final readonly class AdminPanelInstaller
     private const string PACKAGE_VITE_ENTRY = 'vendor/parse/admin-panel/resources/js/app.tsx';
 
     /**
-     * @var array<string, string>
+     * The plugin's own package.json is the single source of truth for the
+     * frontend dependencies host applications must declare.
      */
-    private const array DEPENDENCIES = [
-        '@base-ui/react' => '^1.6.0',
-        '@base-ui/utils' => '^0.4.0',
-        '@babel/runtime' => '^7.29.7',
-        '@date-fns/tz' => '^1.4.1',
-        '@dnd-kit/core' => '^6.3.1',
-        '@dnd-kit/accessibility' => '^3.1.1',
-        '@dnd-kit/modifiers' => '^9.0.0',
-        '@dnd-kit/sortable' => '^10.0.0',
-        '@dnd-kit/utilities' => '^3.2.2',
-        '@floating-ui/core' => '^1.7.3',
-        '@floating-ui/dom' => '^1.7.4',
-        '@floating-ui/react-dom' => '^2.1.9',
-        '@floating-ui/utils' => '^0.2.12',
-        '@inertiajs/core' => '^3.0.0',
-        '@inertiajs/react' => '^3.0.0',
-        '@reduxjs/toolkit' => '^2.0.0',
-        '@tanstack/react-table' => '^8.21.3',
-        '@tanstack/react-virtual' => '^3.14.10',
-        '@tanstack/table-core' => '^8.21.3',
-        '@tanstack/virtual-core' => '^3.14.10',
-        'class-variance-authority' => '^0.7.1',
-        'clsx' => '^2.1.1',
-        'date-fns' => '^4.4.0',
-        'decimal.js-light' => '^2.5.1',
-        'es-toolkit' => '^1.39.3',
-        'eventemitter3' => '^5.0.1',
-        'immer' => '^11.1.8',
-        'lucide-react' => '^1.25.0',
-        'react' => '^19.2.0',
-        'react-day-picker' => '^10.0.1',
-        'react-dom' => '^19.2.0',
-        'react-redux' => '^9.0.0',
-        'recharts' => '^3.10.1',
-        'redux' => '^5.0.1',
-        'redux-thunk' => '^3.1.0',
-        'reselect' => '^5.2.0',
-        'sonner' => '^2.0.8',
-        'tailwind-merge' => '^3.0.1',
-        'tiny-invariant' => '^1.3.3',
-        'tslib' => '^2.0.0',
-        'tw-animate-css' => '^1.4.0',
-        'use-sync-external-store' => '^1.6.0',
-        'victory-vendor' => '^37.0.2',
-    ];
-
-    /**
-     * @var array<string, string>
-     */
-    private const array DEV_DEPENDENCIES = [
-        '@laravel/vite-plugin-wayfinder' => '^0.1.3',
-        '@inertiajs/vite' => '^3.0.0',
-        '@tailwindcss/vite' => '^4.1.11',
-        '@types/react' => '^19.2.0',
-        '@types/react-dom' => '^19.2.0',
-        '@vitejs/plugin-react' => '^5.2.0',
-        'tailwindcss' => '^4.0.0',
-        'typescript' => '^5.7.2',
-        'vite' => '^8.0.0',
-    ];
+    private const string PACKAGE_MANIFEST = '/package.json';
 
     public function __construct(
         private Filesystem $files,
@@ -219,15 +161,23 @@ final readonly class AdminPanelInstaller
             return;
         }
 
+        $packageDependencies = $this->pluginPackageSections();
+
+        if ($packageDependencies === null) {
+            $warnings[] = 'Admin Panel package.json manifest could not be read; install frontend dependencies manually';
+
+            return;
+        }
+
         $dependenciesChanged = $this->mergeDependencies(
             $manifest,
             'dependencies',
-            self::DEPENDENCIES,
+            $packageDependencies['dependencies'],
         );
         $devDependenciesChanged = $this->mergeDependencies(
             $manifest,
             'devDependencies',
-            self::DEV_DEPENDENCIES,
+            $packageDependencies['devDependencies'],
         );
 
         if (! $dependenciesChanged && ! $devDependenciesChanged) {
@@ -290,6 +240,55 @@ final readonly class AdminPanelInstaller
             str_replace(self::PACKAGE_VITE_ENTRY, self::VITE_ENTRY, $contents),
         );
         $completed[] = 'Configured the Admin Panel application Vite entry';
+    }
+
+    /**
+     * @return array{dependencies: array<string, string>, devDependencies: array<string, string>}|null
+     */
+    private function pluginPackageSections(): ?array
+    {
+        $manifestPath = dirname(__DIR__, 2).self::PACKAGE_MANIFEST;
+
+        if (! $this->files->exists($manifestPath)) {
+            return null;
+        }
+
+        try {
+            /** @var array<string, mixed> $manifest */
+            $manifest = json_decode(
+                $this->files->get($manifestPath),
+                true,
+                flags: JSON_THROW_ON_ERROR,
+            );
+        } catch (JsonException) {
+            return null;
+        }
+
+        return [
+            'dependencies' => $this->stringMap($manifest['dependencies'] ?? []),
+            'devDependencies' => $this->stringMap($manifest['devDependencies'] ?? []),
+        ];
+    }
+
+    /**
+     * @param  mixed  $values
+     * @return array<string, string>
+     */
+    private function stringMap(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach ($values as $package => $constraint) {
+            if (is_string($package) && is_string($constraint)) {
+                $map[$package] = $constraint;
+            }
+        }
+
+        return $map;
     }
 
     /**
@@ -532,6 +531,9 @@ final readonly class AdminPanelInstaller
             <<<'CONFIG'
 $1resolve: {
 $1    preserveSymlinks: true,
+$1    // pnpm nests packages under .pnpm; combined with preserveSymlinks this
+$1    // yields two resolvable paths for React and breaks hooks in dev.
+$1    dedupe: ['react', 'react-dom'],
 $1    alias: {
 $1        '@admin-panel': fileURLToPath(
 $1            new URL('./vendor/parse/admin-panel/resources/js', import.meta.url),

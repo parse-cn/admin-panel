@@ -322,6 +322,7 @@ final class MakeAdminResourceCommand extends GeneratorCommand
         return match (true) {
             $this->isBooleanColumn($column) => 'boolean',
             $this->isNumericColumn($column), $this->isIntegerColumn($column) => 'number',
+            in_array($column['type_name'], ['json', 'jsonb'], true) => 'json',
             Str::contains($column['name'], 'email') => 'email',
             Str::contains($column['name'], ['image', 'avatar', 'logo']) => 'image-url',
             default => 'text',

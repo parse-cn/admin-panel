@@ -232,12 +232,21 @@ export function CrudCell({
   }
 
   if (column.type === 'json') {
+    let jsonValue = value;
+    if (typeof value === 'string') {
+      try {
+        jsonValue = JSON.parse(value);
+      } catch {
+        jsonValue = value;
+      }
+    }
+
     return (
       <pre
         className="max-h-96 overflow-auto rounded-lg bg-muted/60 p-4 font-mono text-xs leading-relaxed whitespace-pre text-foreground"
         tabIndex={0}
       >
-        {JSON.stringify(value, null, 2)}
+        {JSON.stringify(jsonValue, null, 2)}
       </pre>
     );
   }

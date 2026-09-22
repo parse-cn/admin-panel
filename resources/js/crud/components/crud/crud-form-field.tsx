@@ -5,6 +5,7 @@ import { BooleanField } from './fields/boolean-field';
 import { ImageField } from './fields/image-field';
 import { ImageUrlField } from './fields/image-url-field';
 import { IpListField } from './fields/ip-list-field';
+import { JsonField } from './fields/json-field';
 import { KeyValueField } from './fields/key-value-field';
 import { SelectField } from './fields/select-field';
 import { TextareaField } from './fields/textarea-field';
@@ -78,6 +79,15 @@ export function CrudFormField({
         errors={errors}
         field={field}
         value={Array.isArray(value) ? value : []}
+        onChange={(next) => onChange(field.name, next)}
+      />
+    );
+  else if (field.type === 'json')
+    control = (
+      <JsonField
+        error={error}
+        field={field}
+        value={value}
         onChange={(next) => onChange(field.name, next)}
       />
     );

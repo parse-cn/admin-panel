@@ -33,19 +33,28 @@ final class InstallAdminPanelCommand extends Command
             $this->components->warn($message);
         }
 
-        $this->call('wayfinder:generate', [
-            '--with-form' => true,
-            '--no-interaction' => true,
-        ]);
+        if ($this->commandExists('wayfinder:generate')) {
+            $this->call('wayfinder:generate', [
+                '--with-form' => true,
+                '--no-interaction' => true,
+            ]);
+        } else {
+            $this->components->warn('wayfinder:generate is not available; skipped route generation');
+        }
 
         $this->newLine();
         $this->components->info('Admin Panel installation is ready.');
         $this->components->bulletList([
-            'Install Node dependencies with your package manager',
+            'Run your package manager install (e.g. pnpm install) to fetch the added frontend dependencies',
             'Run php artisan migrate',
             'Build frontend assets',
         ]);
 
         return $result->warnings === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function commandExists(string $name): bool
+    {
+        return array_key_exists($name, $this->getApplication()->all());
     }
 }

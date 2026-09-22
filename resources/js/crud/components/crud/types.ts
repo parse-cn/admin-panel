@@ -81,7 +81,8 @@ export type CrudField = {
     | 'select'
     | 'boolean'
     | 'image'
-    | 'image-url';
+    | 'image-url'
+    | 'json';
   required: boolean;
   requiredOnCreate: boolean;
   writeOnly: boolean;

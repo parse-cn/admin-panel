@@ -47,6 +47,8 @@ function initialValue(field: CrudField, value: unknown): string | string[] {
           .split(/[\n,]+/)
           .map((item) => item.trim())
           .filter(Boolean);
+  if (field.type === 'json')
+    return typeof value === 'string' ? value : JSON.stringify(value ?? null);
   return String(value ?? '');
 }
 
