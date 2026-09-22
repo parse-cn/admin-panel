@@ -9,8 +9,6 @@ type JsonStructureEditorProps = {
   onUpdate: (data: JsonData) => void;
 };
 
-// The github presets don't define editor input styles, so the whole-node
-// text edit state falls back to raw browser defaults — style it here.
 function withFormFontSize(base: Theme, dark: boolean): Theme {
   const container =
     typeof base.styles?.container === "object" && base.styles.container !== null
@@ -33,8 +31,6 @@ function withFormFontSize(base: Theme, dark: boolean): Theme {
         fontFamily: "inherit",
         fontSize: "inherit",
         outline: "none",
-        // The textarea is sized by a hidden mirror span; plain `width`
-        // loses to that, so pin both.
         width: "100%",
         minWidth: "100%",
         maxWidth: "100%",
@@ -59,8 +55,6 @@ const JsonStructureEditor = lazy(async () => {
       return (
         <JsonEditor
           data={data}
-          // Falsy string keeps the prop defined so the library's own
-          // default label ("data"/"root") is not rendered.
           rootName=""
           collapse={false}
           showArrayIndices={false}
@@ -85,12 +79,6 @@ type JsonFieldProps = {
   onChange: (next: string) => void;
 };
 
-/**
- * Accepts the raw form value (a JSON string or an already-decoded object
- * coming from the record) and reports changes back as a serialized JSON
- * string, keeping `CrudFormData` string-shaped. Empty or unparsable values
- * behave as an empty object — the tree editor guarantees valid output.
- */
 function parseJson(value: unknown): { data: JsonData; text: string } {
   if (value === null || value === undefined || value === "") {
     value = {};
@@ -99,7 +87,6 @@ function parseJson(value: unknown): { data: JsonData; text: string } {
   if (typeof value === "string") {
     try {
       const data = JSON.parse(value) as JsonData;
-      // A literal "null" string parses fine but must still render as `{}`.
       return { data: data ?? {}, text: data === null ? "{}" : value };
     } catch {
       return { data: {}, text: "{}" };
@@ -115,7 +102,6 @@ function parseJson(value: unknown): { data: JsonData; text: string } {
 
 export function JsonField({ error, field, value, onChange }: JsonFieldProps) {
   const parsed = parseJson(value);
-  // Follow the app's color scheme by default; the toolbar button overrides.
   const [dark, setDark] = useState(
     () =>
       typeof document !== "undefined" &&
