@@ -1,11 +1,11 @@
 import { lazy, Suspense, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import type { JsonData, Theme } from "json-edit-react";
-import type { CrudField } from "../types";
 
 type JsonStructureEditorProps = {
   data: JsonData;
   dark: boolean;
+  readOnly?: boolean;
   onUpdate: (data: JsonData) => void;
 };
 
@@ -50,6 +50,7 @@ const JsonStructureEditor = lazy(async () => {
     default: function JsonStructureEditor({
       data,
       dark,
+      readOnly,
       onUpdate,
     }: JsonStructureEditorProps) {
       return (
@@ -58,9 +59,10 @@ const JsonStructureEditor = lazy(async () => {
           rootName=""
           collapse={false}
           showArrayIndices={false}
-          showCollectionCount='when-closed'
+          showCollectionCount="when-closed"
           indent={2}
           minWidth="100%"
+          viewOnly={readOnly}
           theme={withFormFontSize(
             dark ? githubDarkTheme : githubLightTheme,
             dark,
@@ -74,9 +76,12 @@ const JsonStructureEditor = lazy(async () => {
 
 type JsonFieldProps = {
   error?: string;
-  field: CrudField;
+  // Enough for both CrudField (form) and CrudColumn (table cell) — only the
+  // name is used, as the accessible container id.
+  field: { name: string };
   value: unknown;
-  onChange: (next: string) => void;
+  readOnly?: boolean;
+  onChange?: (next: string) => void;
 };
 
 function parseJson(value: unknown): { data: JsonData; text: string } {
@@ -100,7 +105,13 @@ function parseJson(value: unknown): { data: JsonData; text: string } {
   return { data: {}, text: "{}" };
 }
 
-export function JsonField({ error, field, value, onChange }: JsonFieldProps) {
+export function JsonField({
+  error,
+  field,
+  value,
+  readOnly,
+  onChange,
+}: JsonFieldProps) {
   const parsed = parseJson(value);
   const [dark, setDark] = useState(
     () =>
@@ -142,7 +153,8 @@ export function JsonField({ error, field, value, onChange }: JsonFieldProps) {
             key={dark ? "dark" : "light"}
             data={parsed.data}
             dark={dark}
-            onUpdate={(newData) => onChange(JSON.stringify(newData))}
+            readOnly={readOnly}
+            onUpdate={(newData) => onChange?.(JSON.stringify(newData))}
           />
         </Suspense>
       </div>

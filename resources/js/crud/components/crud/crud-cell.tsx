@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightIcon, CheckIcon, CopyIcon, MinusIcon } from 'lucide-react';
 import { Amount, Avatar, AvatarImage, Badge, formatAmount } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
+import { JsonField } from './fields/json-field';
 import type { AdminPanelPageProps } from '../../../types';
 import type { CrudColumn, CrudRecord } from './types';
 
@@ -232,23 +233,7 @@ export function CrudCell({
   }
 
   if (column.type === 'json') {
-    let jsonValue = value;
-    if (typeof value === 'string') {
-      try {
-        jsonValue = JSON.parse(value);
-      } catch {
-        jsonValue = value;
-      }
-    }
-
-    return (
-      <pre
-        className="max-h-96 overflow-auto rounded-lg bg-muted/60 p-4 font-mono text-xs leading-relaxed whitespace-pre text-foreground"
-        tabIndex={0}
-      >
-        {JSON.stringify(jsonValue, null, 2)}
-      </pre>
-    );
+    return <JsonField field={column} value={value} readOnly />;
   }
 
   const text = String(value);
