@@ -33,7 +33,11 @@ function withFormFontSize(base: Theme, dark: boolean): Theme {
         fontFamily: "inherit",
         fontSize: "inherit",
         outline: "none",
+        // The textarea is sized by a hidden mirror span; plain `width`
+        // loses to that, so pin both.
         width: "100%",
+        minWidth: "100%",
+        maxWidth: "100%",
         resize: "vertical",
       },
       inputHighlight: { backgroundColor: "rgba(46, 160, 67, 0.15)" },

@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* json-edit-react: the whole-node text edit container is a flex item and
+   shrinks to content width; stretch it so its textarea fills the editor. */
+.jer-collection-text-edit {
+    width: 100%;
+}
+
+.jer-collection-text-edit > div:first-child {
+    width: 100%;
+}
+
+
 @source '../js/**/*.{ts,tsx}';
 @source '../../../../upp/*/resources/js/**/*.{ts,tsx}';
 
