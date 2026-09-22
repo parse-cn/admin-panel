@@ -9,18 +9,34 @@ type JsonStructureEditorProps = {
   onUpdate: (data: JsonData) => void;
 };
 
-// Match the global form font size; everything else stays the library's own.
-function withFormFontSize(base: Theme): Theme {
+// The github presets don't define editor input styles, so the whole-node
+// text edit state falls back to raw browser defaults — style it here.
+function withFormFontSize(base: Theme, dark: boolean): Theme {
   const container =
     typeof base.styles?.container === "object" && base.styles.container !== null
       ? base.styles.container
       : {};
+
+  const border = dark ? "#30363d" : "#d0d7de";
 
   return {
     ...base,
     styles: {
       ...base.styles,
       container: { ...container, fontSize: "0.875rem" },
+      input: {
+        backgroundColor: dark ? "#0d1117" : "#ffffff",
+        color: dark ? "#e6edf3" : "#24292f",
+        border: `1px solid ${border}`,
+        borderRadius: 6,
+        padding: "2px 4px",
+        fontFamily: "inherit",
+        fontSize: "inherit",
+        outline: "none",
+        width: "100%",
+        resize: "vertical",
+      },
+      inputHighlight: { backgroundColor: "rgba(46, 160, 67, 0.15)" },
     },
   };
 }
@@ -44,9 +60,13 @@ const JsonStructureEditor = lazy(async () => {
           rootName=""
           collapse={false}
           showArrayIndices={false}
+          showCollectionCount='when-closed'
           indent={2}
           minWidth="100%"
-          theme={withFormFontSize(dark ? githubDarkTheme : githubLightTheme)}
+          theme={withFormFontSize(
+            dark ? githubDarkTheme : githubLightTheme,
+            dark,
+          )}
           onUpdate={({ newData }) => onUpdate(newData as JsonData)}
         />
       );
