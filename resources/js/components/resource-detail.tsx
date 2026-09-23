@@ -3,10 +3,6 @@ import type { ResolvedComponent } from '@inertiajs/react';
 import { createElement, lazy, Suspense } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import { Sheet, SheetContent } from '@admin-panel/ui/components/ui/sheet';
-import CrudShowContent from '../pages/crud/show-content';
-import type { CrudShowProps } from '@admin-panel/crud';
-import CrudFormContent from '../pages/crud/form-content';
-import type { CrudFormProps } from '@admin-panel/crud';
 import { preserveCurrentQuery } from '@admin-panel/crud/lib/preserve-query';
 
 type Detail = {
@@ -68,24 +64,6 @@ export function ResourceDetailContent({
 }: Detail & {
   presentation: 'page' | 'sheet';
 }) {
-  if (component === 'crud/show-content') {
-    return (
-      <CrudShowContent
-        {...(props as CrudShowProps)}
-        presentation={presentation}
-      />
-    );
-  }
-
-  if (component === 'crud/form-content') {
-    return (
-      <CrudFormContent
-        {...(props as CrudFormProps)}
-        presentation={presentation}
-      />
-    );
-  }
-
   const Component = detailComponents.get(component);
 
   if (!Component) {
