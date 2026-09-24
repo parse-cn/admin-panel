@@ -112,7 +112,6 @@ export function CrudCell({
     return (
       <Badge
         className={option?.className}
-        radius="full"
         variant={badgeVariants[variant]}
       >
         {option?.dot && (
