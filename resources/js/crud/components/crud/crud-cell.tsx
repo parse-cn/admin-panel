@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightIcon, CheckIcon, CopyIcon, MinusIcon } from 'lucide-react';
-import { Amount, Avatar, AvatarImage, Badge, formatAmount } from '@admin-panel/ui';
+import { Amount, Avatar, AvatarImage, Badge, RemixIcon, formatAmount } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
 import { JsonField } from './fields/json-field';
 import type { AdminPanelPageProps } from '../../../types';
@@ -116,6 +116,7 @@ export function CrudCell({
     const subtitle = column.subtitle ? record.values[column.subtitle] : null;
     const avatar = column.avatar ? record.values[column.avatar] : null;
     const hasAvatar = avatar !== null && avatar !== undefined && avatar !== '';
+    const hasIcon = !hasAvatar && Boolean(column.icon);
     const identityTitleClassName = column.truncate
       ? `${detailLinkTextClassName} max-w-64`
       : detailLinkTextClassName;
@@ -132,6 +133,11 @@ export function CrudCell({
           <Avatar className="size-9">
             <AvatarImage src={String(avatar)} alt="" />
           </Avatar>
+        )}
+        {hasIcon && (
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <RemixIcon aria-hidden="true" name={column.icon!} className="size-4" />
+          </span>
         )}
         <div className="min-w-0">
           {href ? (

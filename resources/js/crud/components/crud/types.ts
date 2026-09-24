@@ -48,6 +48,7 @@ export type CrudColumn = {
   link?: 'show';
   subtitle?: string;
   avatar?: string;
+  icon?: string;
   options?: Record<string, CrudOption>;
   copyable?: boolean;
   truncate?: boolean;
