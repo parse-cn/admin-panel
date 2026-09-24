@@ -21,7 +21,11 @@ function withFormFontSize(base: Theme, dark: boolean): Theme {
     ...base,
     styles: {
       ...base.styles,
-      container: { ...container, fontSize: "0.875rem" },
+      container: {
+        ...container,
+        backgroundColor: dark ? "#27272a" : "#f4f4f5",
+        fontSize: "0.875rem",
+      },
       input: {
         backgroundColor: dark ? "#0d1117" : "#ffffff",
         color: dark ? "#e6edf3" : "#24292f",
