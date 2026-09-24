@@ -1,7 +1,20 @@
 export type CrudOption = {
   label: string;
   value?: string;
-  variant?: 'default' | 'success' | 'warning' | 'destructive';
+  variant?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'info'
+    | 'success'
+    | 'warning'
+    | 'destructive'
+    | 'focus'
+    | 'invert';
+  icon?: string;
+  dot?: boolean;
+  pulse?: boolean;
+  className?: string;
 };
 
 export type CrudIndexHeader = {

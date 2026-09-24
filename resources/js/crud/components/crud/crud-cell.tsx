@@ -16,10 +16,15 @@ type CrudCellProps = {
 };
 
 const badgeVariants = {
-  default: 'outline',
-  success: 'success-outline',
-  warning: 'warning-outline',
-  destructive: 'destructive-outline',
+  default: 'primary-light',
+  primary: 'primary-light',
+  secondary: 'secondary',
+  info: 'info-light',
+  success: 'success-light',
+  warning: 'warning-light',
+  destructive: 'destructive-light',
+  focus: 'focus-light',
+  invert: 'invert-light',
 } as const;
 
 const detailLinkClassName =
@@ -105,7 +110,20 @@ export function CrudCell({
     const variant = option?.variant ?? 'default';
 
     return (
-      <Badge variant={badgeVariants[variant]}>
+      <Badge
+        className={option?.className}
+        radius="full"
+        variant={badgeVariants[variant]}
+      >
+        {option?.dot && (
+          <span
+            aria-hidden="true"
+            className={`size-1.5 rounded-full bg-current ${option.pulse ? 'animate-pulse' : ''}`}
+          />
+        )}
+        {option?.icon && (
+          <RemixIcon aria-hidden="true" name={option.icon} className="text-xs" />
+        )}
         {option ? translateOptionLabel(option.label) : String(value)}
       </Badge>
     );

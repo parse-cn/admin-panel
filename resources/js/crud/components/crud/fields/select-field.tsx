@@ -1,4 +1,5 @@
 import {
+  RemixIcon,
   Select,
   SelectContent,
   SelectItem,
@@ -6,6 +7,18 @@ import {
   SelectValue,
 } from '@admin-panel/ui';
 import type { CrudField } from '../types';
+
+const optionTextColors = {
+  default: 'text-primary',
+  primary: 'text-primary',
+  secondary: 'text-muted-foreground',
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  destructive: 'text-destructive',
+  focus: 'text-focus',
+  invert: 'text-foreground',
+} as const;
 
 type Props = {
   error?: string;
@@ -43,11 +56,28 @@ export function SelectField({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent align="start" alignItemWithTrigger={false}>
-        {(field.options ?? []).map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {translate(option.label)}
-          </SelectItem>
-        ))}
+        {(field.options ?? []).map((option) => {
+          const color = optionTextColors[option.variant ?? 'default'];
+
+          return (
+            <SelectItem key={option.value} value={option.value}>
+              {option.dot && (
+                <span
+                  aria-hidden="true"
+                  className={`size-1.5 shrink-0 rounded-full bg-current ${color} ${option.pulse ? 'animate-pulse' : ''}`}
+                />
+              )}
+              {option.icon && (
+                <RemixIcon
+                  aria-hidden="true"
+                  name={option.icon}
+                  className={`shrink-0 text-sm ${color}`}
+                />
+              )}
+              {translate(option.label)}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

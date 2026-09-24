@@ -1,5 +1,5 @@
 import { CheckIcon, ListFilterIcon } from 'lucide-react';
-import { Button } from '@admin-panel/ui';
+import { Button, RemixIcon } from '@admin-panel/ui';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,44 @@ import {
   DropdownMenuTrigger,
 } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
-import type { CrudColumn } from '../crud/types';
+import type { CrudColumn, CrudOption } from '../crud/types';
+
+const optionTextColors = {
+  default: 'text-primary',
+  primary: 'text-primary',
+  secondary: 'text-muted-foreground',
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  destructive: 'text-destructive',
+  focus: 'text-focus',
+  invert: 'text-foreground',
+} as const;
+
+function OptionAdornment({ option }: { option: CrudOption }) {
+  const color = optionTextColors[option.variant ?? 'default'];
+
+  if (option.dot) {
+    return (
+      <span
+        aria-hidden="true"
+        className={`size-1.5 shrink-0 rounded-full bg-current ${color} ${option.pulse ? 'animate-pulse' : ''}`}
+      />
+    );
+  }
+
+  if (option.icon) {
+    return (
+      <RemixIcon
+        aria-hidden="true"
+        name={option.icon}
+        className={`shrink-0 text-sm ${color}`}
+      />
+    );
+  }
+
+  return null;
+}
 
 type DataGridColumnFilterProps = {
   column: CrudColumn;
@@ -55,6 +92,7 @@ export function DataGridColumnFilter({
               key={optionValue}
               onClick={() => onChange(optionValue)}
             >
+              <OptionAdornment option={option} />
               <span className="flex-1">
                 {translateOptionLabel(option.label)}
               </span>
