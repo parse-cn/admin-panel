@@ -57,6 +57,11 @@ export type AdminPanelFlashToast = {
   type: 'success' | 'info' | 'warning' | 'error';
 };
 
+export type AdminPanelCurrency = {
+  precision: number;
+  symbol: string | null;
+};
+
 export type AdminPanelPageProps = {
   [key: string]: unknown;
   auth: {
@@ -93,4 +98,5 @@ export type AdminPanelPageProps = {
   activeTab?: string;
   tabUrls?: Record<string, string>;
   translations?: Record<string, unknown>;
+  currencies?: Record<string, AdminPanelCurrency>;
 };

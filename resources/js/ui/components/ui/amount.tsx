@@ -11,6 +11,12 @@ export type AmountInfo = {
   sign: -1 | 0 | 1;
 };
 
+export type CurrencyDisplay = {
+  code: string;
+  precision: number;
+  symbol?: string | null;
+};
+
 const decimalFormatParts = new Intl.NumberFormat().formatToParts(1000.1);
 const decimalSeparator =
   decimalFormatParts.find((part) => part.type === 'decimal')?.value ?? '.';
@@ -81,6 +87,47 @@ export type AmountProps = {
   className?: string;
 };
 
+export type MoneyProps = AmountProps & {
+  currency: CurrencyDisplay;
+  /** Display the ISO/code identifier after the amount to disambiguate symbols. */
+  showCode?: boolean;
+};
+
+function formatMoneyAmount(
+  value: string | null | undefined,
+  precision: number,
+): AmountInfo | null {
+  const amount = formatAmount(value);
+
+  if (!amount || precision < 0 || !Number.isInteger(precision)) {
+    return amount;
+  }
+
+  const trimmed = value?.trim() ?? '';
+  const match = trimmed.match(AMOUNT_PATTERN);
+
+  if (!match) {
+    return amount;
+  }
+
+  const rawFraction = match[3] ?? '';
+
+  // Provider evidence may legitimately contain more precision than our
+  // configured currency. Preserve it rather than silently changing the value.
+  if (rawFraction.length > precision && /[1-9]/.test(rawFraction.slice(precision))) {
+    return amount;
+  }
+
+  const fraction = rawFraction.slice(0, precision).padEnd(precision, '0');
+
+  return {
+    ...amount,
+    formatted: precision === 0
+      ? amount.formatted.split(decimalSeparator)[0]
+      : `${amount.formatted.split(decimalSeparator)[0]}${decimalSeparator}${fraction}`,
+  };
+}
+
 /**
  * Render a decimal amount with consistent grouping and trailing-zero stripping.
  *
@@ -122,6 +169,52 @@ export function Amount({
     <span className={cn('font-mono tabular-nums', toneClassName, className)}>
       {prefix}
       {amount.formatted}
+    </span>
+  );
+}
+
+/**
+ * Render a monetary amount using currency-controlled scale without coercing the
+ * amount into a JavaScript number. A code suffix keeps ambiguous symbols such
+ * as "$" identifiable in multi-currency screens.
+ */
+export function Money({
+  value,
+  currency,
+  signed = false,
+  internalMovement = false,
+  tone = 'none',
+  className,
+  showCode = true,
+}: MoneyProps) {
+  const amount = formatMoneyAmount(value, currency.precision);
+
+  if (!amount) {
+    if (value === null || value === undefined || value.trim() === '') {
+      return null;
+    }
+
+    return <span className={className}>{value}</span>;
+  }
+
+  const prefix = signed && amount.sign > 0 ? '+' : amount.sign < 0 ? '−' : '';
+  const toneClassName =
+    tone === 'auto' && signed
+      ? internalMovement && amount.sign === 0
+        ? 'font-medium text-blue-700 dark:text-blue-400'
+        : amount.sign > 0
+          ? 'font-medium text-emerald-700 dark:text-emerald-400'
+          : amount.sign < 0
+            ? 'font-medium text-red-700 dark:text-red-400'
+            : 'text-muted-foreground'
+      : '';
+  const currencyPrefix = currency.symbol?.trim() || currency.code;
+
+  return (
+    <span className={cn('font-mono tabular-nums', toneClassName, className)}>
+      {prefix}
+      {currencyPrefix} {amount.formatted}
+      {showCode && currencyPrefix !== currency.code ? ` ${currency.code}` : ''}
     </span>
   );
 }

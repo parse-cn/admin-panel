@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowRightIcon, CheckIcon, CopyIcon, MinusIcon } from 'lucide-react';
-import { Amount, Avatar, AvatarImage, Badge, RemixIcon, formatAmount } from '@admin-panel/ui';
+import { Amount, Avatar, AvatarImage, Badge, Money, RemixIcon, formatAmount } from '@admin-panel/ui';
 import { useCrudI18n } from '../../i18n/crud-i18n';
 import { JsonField } from './fields/json-field';
 import type { AdminPanelPageProps } from '../../../types';
@@ -41,7 +41,7 @@ export function CrudCell({
   value,
 }: CrudCellProps) {
   const { booleanOptions, translateOptionLabel } = useCrudI18n();
-  const { i18n, panel } = usePage<AdminPanelPageProps>().props;
+  const { currencies, i18n, panel } = usePage<AdminPanelPageProps>().props;
   const [copied, setCopied] = useState(false);
 
   if (value === null || value === undefined || value === '') {
@@ -249,6 +249,40 @@ export function CrudCell({
         value={stringValue}
         signed={signed}
         internalMovement={isInternalMovement}
+        tone={signed ? 'auto' : 'none'}
+        className={signed ? undefined : 'text-foreground'}
+      />
+    );
+  }
+
+  if (column.type === 'money' || column.type === 'signed-money') {
+    const currencyValue = column.currencyField
+      ? record?.values[column.currencyField]
+      : undefined;
+    const currencyCode = typeof currencyValue === 'string' ? currencyValue : null;
+    const currency = currencyCode
+      ? currencies?.[currencyCode]
+      : undefined;
+
+    if (!currency || currencyCode === null) {
+      return <span>{String(value)}</span>;
+    }
+
+    const signed = column.type === 'signed-money';
+    const stringValue = typeof value === 'string' ? value : null;
+    const referenceValue = column.signedColorReference
+      ? record?.values[column.signedColorReference]
+      : undefined;
+    const referenceAmount = formatAmount(
+      typeof referenceValue === 'string' ? referenceValue : null,
+    );
+
+    return (
+      <Money
+        value={stringValue}
+        currency={{ code: currencyCode, ...currency }}
+        signed={signed}
+        internalMovement={signed && referenceAmount?.sign === 0}
         tone={signed ? 'auto' : 'none'}
         className={signed ? undefined : 'text-foreground'}
       />

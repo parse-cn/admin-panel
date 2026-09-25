@@ -49,6 +49,8 @@ export type CrudColumn = {
     | 'datetime'
     | 'decimal'
     | 'signed-decimal'
+    | 'money'
+    | 'signed-money'
     | 'identity'
     | 'json';
   detailOnly?: boolean;
@@ -67,6 +69,7 @@ export type CrudColumn = {
   truncate?: boolean;
   truncateMiddle?: boolean;
   signedColorReference?: string;
+  currencyField?: string;
 };
 
 export type CrudFilterType = 'select' | 'text' | 'date' | 'number';

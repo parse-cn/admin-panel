@@ -50,8 +50,13 @@ export {
   DataGridTableRowSelect,
   DataGridTableRowSelectAll,
 } from './components/reui/data-grid/data-grid-table';
-export { Amount, formatAmount } from './components/ui/amount';
-export type { AmountInfo, AmountProps } from './components/ui/amount';
+export { Amount, Money, formatAmount } from './components/ui/amount';
+export type {
+  AmountInfo,
+  AmountProps,
+  CurrencyDisplay,
+  MoneyProps,
+} from './components/ui/amount';
 export {
   AlertDialog,
   AlertDialogAction,
