@@ -469,6 +469,157 @@ final class CustomerResource extends AdminPanelResource
 }
 ```
 
+### columns() 参数
+
+`columns()` 定义列表页的每一列。除以下列出的键外，其他自定义键会原样透传给前端。
+
+| 键 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `name` | string | 必填 | 字段名，取自 record 属性（支持点号取嵌套值） |
+| `label` | string | 必填 | 表头文案，前端会走 i18n 翻译 |
+| `type` | string | `'text'` | 渲染类型，见下表 |
+| `searchable` | bool \| string[] | `false` | 是否参与搜索；传 `string[]` 时指定实际搜索的列（如关联字段） |
+| `sortable` | bool | `false` | 是否可排序 |
+| `defaultSort` | `'asc'` \| `'desc'` | — | 默认排序方向（目前前端尚未消费，保留键） |
+| `filterable` | bool | 自动 | 有 `options` 或配置 `filter` 时自动为 `true` |
+| `filter` | array | — | 覆盖筛选器定义：`['type' => 'select'\|'text'\|'date'\|'number', 'operators' => [...]]` |
+| `options` | array | — | 值 => `{label, variant, icon, dot, pulse, className}` 映射，驱动 badge 渲染与筛选下拉 |
+| `link` | `'show'` | — | 设置后单元格标题链接到详情页 |
+| `detailOnly` | bool | `false` | 只在详情页显示，列表接口不返回该列 |
+| `hidden` | bool | `false` | 不渲染该列 |
+| `copyable` | bool | `false` | 显示为可点击复制的等宽文本 |
+| `truncate` | bool | `false` | 限宽截断并显示 title |
+| `truncateMiddle` | bool | `false` | 中间省略（适合长 ID，超过 14 字符时 `前7…后7`） |
+
+列类型：
+
+| type | 说明 | 专用参数 |
+| --- | --- | --- |
+| `text` | 纯文本（默认） | — |
+| `badge` | 状态徽章，浅色胶囊，值经 `options` 映射 | `options` 中每项可配 `variant`（`default`/`primary`/`secondary`/`info`/`success`/`warning`/`destructive`/`focus`/`invert`）、`icon`（Remix 图标名）、`dot`（圆点）、`pulse`（圆点呼吸闪烁）、`className` |
+| `boolean` | ✓/– 布尔展示，文案取 i18n 的 boolean 选项 | — |
+| `datetime` | 按 Panel 时区与语言格式化 | — |
+| `decimal` | 金额展示（字符串精度，不转 Number） | — |
+| `signed-decimal` | 带符号金额，正负着色 | `signedColorReference`：指定判断内部流动的参照列 |
+| `identity` | 头像/图标 + 标题 + 副标题的实体列 | `subtitle`：副标题列名；`avatar`：头像 URL 列名；`icon`：无头像时显示的 Remix 图标名 |
+| `json` | JSON 树形只读展示 | — |
+
+示例：
+
+```php
+public static function columns(): array
+{
+    return [
+        [
+            'name' => 'name',
+            'label' => 'Name',
+            'type' => 'identity',
+            'icon' => 'user-line',
+            'subtitle' => 'email',
+            'searchable' => true,
+            'sortable' => true,
+            'link' => 'show',
+            'truncate' => true,
+        ],
+        [
+            'name' => 'status',
+            'label' => 'Status',
+            'type' => 'badge',
+            'options' => [
+                'active' => ['label' => 'Active', 'variant' => 'success', 'icon' => 'check-line'],
+                'pending' => ['label' => 'Pending', 'variant' => 'warning', 'dot' => true],
+                'processing' => ['label' => 'Processing', 'variant' => 'info', 'dot' => true, 'pulse' => true],
+                'disabled' => ['label' => 'Disabled', 'variant' => 'destructive'],
+            ],
+            'filterable' => true,
+        ],
+    ];
+}
+```
+
+### fields() 参数
+
+`fields()` 定义创建/编辑表单。数组项可以是单个字段，也可以是分组：
+
+```php
+// 分组：columns 为 2 | 3 | 4 列栅格
+[
+    'columns' => 2,
+    'fields' => [
+        ['name' => 'first_name', 'label' => 'First name'],
+        ['name' => 'last_name', 'label' => 'Last name'],
+    ],
+]
+```
+
+单个字段支持的键（`rules` / `itemRules` 只用于服务端验证，不会传给前端）：
+
+| 键 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `name` | string | 必填 | 字段名 |
+| `label` | string | 必填 | 表单标签，走 i18n 翻译 |
+| `type` | string | `'text'` | 控件类型，见下表 |
+| `required` | bool | `false` | 前端必填标记（星号与校验提示）；服务端必填需在 `rules` 里显式写 `'required'` |
+| `requiredOnCreate` | bool | `false` | 前端仅在创建表单标记必填；服务端需在 `rules`（可用闭包按创建/更新区分）里体现 |
+| `writeOnly` | bool | `false` | 只提交不回显（如密码）；该字段不会出现在 record values |
+| `placeholder` | string | — | 占位文案 |
+| `options` | array | — | `select` 的选项：`[{label, value, variant, icon, dot, pulse, className}]`，下拉项支持状态视觉 |
+| `preview` | string | — | 预览值来源字段名（编辑时回显用） |
+| `uploadUrl` | string | — | 覆盖图片上传地址，默认使用 Panel 的 `image` 上传用途 |
+| `credentialOptions` | array | — | 按父字段值分组的 `select` 子选项：`{父值 => [{key, optional}]}` |
+| `rules` | array \| string \| Closure | — | Laravel 验证规则，应用于 `{name}`；支持闭包 `fn ($record)` 按记录区分 |
+| `itemRules` | array \| Closure | — | `ip-list` 的逐项规则，自动转换为 `{name}.*`；支持闭包 `fn ($record)` |
+
+字段类型：
+
+| type | 说明 |
+| --- | --- |
+| `text` | 单行文本（默认） |
+| `email` | 邮箱输入 |
+| `password` | 密码输入（建议配合 `writeOnly`） |
+| `textarea` | 多行文本 |
+| `select` | 下拉选择，需 `options` |
+| `boolean` | 开关 |
+| `image` / `image-url` | 图片上传 / 图片 URL 输入 |
+| `ip-list` | IP 标签输入，以 `string[]` 提交，配合 `itemRules` |
+| `key-value` | 键值对列表 |
+| `json` | JSON 树形编辑器（json-edit-react），提交值为 JSON 字符串 |
+
+示例：
+
+```php
+public static function fields(): array
+{
+    return [
+        [
+            'name' => 'email',
+            'label' => 'Email',
+            'type' => 'email',
+            'required' => true,
+            'rules' => ['required', 'email', 'max:255'],
+        ],
+        [
+            'name' => 'password',
+            'label' => 'Password',
+            'type' => 'password',
+            'writeOnly' => true,
+            'requiredOnCreate' => true,
+            'rules' => ['nullable', 'string', 'min:8'],
+        ],
+        [
+            'name' => 'status',
+            'label' => 'Status',
+            'type' => 'select',
+            'options' => [
+                ['label' => 'Active', 'value' => 'active', 'variant' => 'success'],
+                ['label' => 'Disabled', 'value' => 'disabled', 'variant' => 'destructive'],
+            ],
+            'rules' => ['required', 'in:active,disabled'],
+        ],
+    ];
+}
+```
+
 IP 白名单可使用专用的标签输入字段。它以 `string[]` 提交；`itemRules`
 会被转换为 Laravel 的 `allowed_ips.*` 验证规则：
 
