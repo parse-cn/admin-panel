@@ -270,6 +270,7 @@ export function CrudCell({
 
     const signed = column.type === 'signed-money';
     const stringValue = typeof value === 'string' ? value : null;
+    const amount = formatAmount(stringValue);
     const referenceValue = column.signedColorReference
       ? record?.values[column.signedColorReference]
       : undefined;
@@ -283,8 +284,15 @@ export function CrudCell({
         currency={{ code: currencyCode, ...currency }}
         signed={signed}
         internalMovement={signed && referenceAmount?.sign === 0}
+        showCode={column.showCurrencyCode}
         tone={signed ? 'auto' : 'none'}
-        className={signed ? undefined : 'text-foreground'}
+        className={
+          signed
+            ? undefined
+            : amount?.sign === 0
+              ? 'text-muted-foreground'
+              : 'text-foreground'
+        }
       />
     );
   }

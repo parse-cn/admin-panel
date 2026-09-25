@@ -70,6 +70,7 @@ export type CrudColumn = {
   truncateMiddle?: boolean;
   signedColorReference?: string;
   currencyField?: string;
+  showCurrencyCode?: boolean;
 };
 
 export type CrudFilterType = 'select' | 'text' | 'date' | 'number';
