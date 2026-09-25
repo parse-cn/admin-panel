@@ -213,7 +213,7 @@ export function Money({
   return (
     <span className={cn('font-mono tabular-nums', toneClassName, className)}>
       {prefix}
-      {currencyPrefix} {amount.formatted}
+      {currencyPrefix}{amount.formatted}
       {showCode && currencyPrefix !== currency.code ? ` ${currency.code}` : ''}
     </span>
   );
