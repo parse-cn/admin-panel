@@ -120,6 +120,10 @@ export function PreferencesContent() {
         </PreferenceRow>
         <PreferenceRow label={t('locale.label')}>
           <Select
+            items={supportedLocales.map((supported) => ({
+              label: supported.label,
+              value: supported.locale,
+            }))}
             value={locale}
             onValueChange={(value) => value && setLocale(value)}
           >

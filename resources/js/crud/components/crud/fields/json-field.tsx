@@ -3,6 +3,7 @@ import { Moon, Sun } from "lucide-react";
 import type { JsonData, Theme } from "json-edit-react";
 
 type JsonStructureEditorProps = {
+  collapsed?: boolean;
   data: JsonData;
   dark: boolean;
   readOnly?: boolean;
@@ -25,6 +26,7 @@ function withFormFontSize(base: Theme, dark: boolean): Theme {
         ...container,
         backgroundColor: dark ? "#27272a" : "#f4f4f5",
         fontSize: "0.875rem",
+        padding: "6px 1em 6px 2em",
       },
       input: {
         backgroundColor: dark ? "#0d1117" : "#ffffff",
@@ -52,6 +54,7 @@ const JsonStructureEditor = lazy(async () => {
 
   return {
     default: function JsonStructureEditor({
+      collapsed,
       data,
       dark,
       readOnly,
@@ -61,7 +64,7 @@ const JsonStructureEditor = lazy(async () => {
         <JsonEditor
           data={data}
           rootName=""
-          collapse={false}
+          collapse={collapsed}
           showArrayIndices={false}
           showCollectionCount="when-closed"
           indent={2}
@@ -80,6 +83,7 @@ const JsonStructureEditor = lazy(async () => {
 
 type JsonFieldProps = {
   error?: string;
+  collapsed?: boolean;
   // Enough for both CrudField (form) and CrudColumn (table cell) — only the
   // name is used, as the accessible container id.
   field: { name: string };
@@ -110,6 +114,7 @@ function parseJson(value: unknown): { data: JsonData; text: string } {
 }
 
 export function JsonField({
+  collapsed,
   error,
   field,
   value,
@@ -155,6 +160,7 @@ export function JsonField({
         >
           <JsonStructureEditor
             key={dark ? "dark" : "light"}
+            collapsed={collapsed}
             data={parsed.data}
             dark={dark}
             readOnly={readOnly}

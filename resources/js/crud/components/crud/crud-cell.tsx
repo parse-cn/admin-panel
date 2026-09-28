@@ -8,6 +8,7 @@ import type { AdminPanelPageProps } from '../../../types';
 import type { CrudColumn, CrudRecord } from './types';
 
 type CrudCellProps = {
+  collapseJson?: boolean;
   column: CrudColumn;
   href?: string;
   onShow?: () => void;
@@ -34,6 +35,7 @@ const detailLinkTextClassName =
   'relative truncate after:absolute after:right-0 after:bottom-0 after:left-0 after:h-px after:origin-left after:scale-x-0 after:bg-foreground after:opacity-0 after:transition-[transform,opacity] after:duration-280 after:ease-out group-hover/detail-link:after:scale-x-100 group-hover/detail-link:after:opacity-100 group-focus-visible/detail-link:after:scale-x-100 group-focus-visible/detail-link:after:opacity-100 motion-reduce:after:transition-none';
 
 export function CrudCell({
+  collapseJson,
   column,
   href,
   onShow,
@@ -298,7 +300,16 @@ export function CrudCell({
   }
 
   if (column.type === 'json') {
-    return <JsonField field={column} value={value} readOnly />;
+    return (
+      <div className={collapseJson ? 'min-w-90' : undefined}>
+        <JsonField
+          collapsed={collapseJson}
+          field={column}
+          value={value}
+          readOnly
+        />
+      </div>
+    );
   }
 
   const text = String(value);

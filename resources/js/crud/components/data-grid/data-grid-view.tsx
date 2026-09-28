@@ -152,6 +152,7 @@ export function DataGridView({
         cell: ({ row }) => {
           const cell = (
             <CrudCell
+              collapseJson
               column={column}
               href={
                 column.type === 'identity' && column.link === 'show'
