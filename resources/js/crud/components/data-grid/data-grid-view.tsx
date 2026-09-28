@@ -316,6 +316,7 @@ export function DataGridView({
         rowBorder: true,
         width: 'auto',
       }}
+      tableClassNames={{ bodyRow: '[&>td]:h-10' }}
     >
       <Frame variant="default" spacing="sm" className="w-full" dense>
         <DataGridHeader
@@ -354,7 +355,7 @@ export function DataGridView({
             />
           )}
           <Separator />
-          <DataGridScrollArea className="min-h-90">
+          <DataGridScrollArea>
             <DataGridTable />
           </DataGridScrollArea>
         </FramePanel>
