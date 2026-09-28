@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '../../ui/select';
 import { Skeleton } from '../../ui/skeleton';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, LoaderCircleIcon } from 'lucide-react';
 
 interface DataGridPaginationProps {
   sizes?: number[];
@@ -31,10 +31,12 @@ interface DataGridPaginationProps {
   previousPageLabel?: string;
   nextPageLabel?: string;
   ellipsisText?: string;
+  isFetching?: boolean;
 }
 
 function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
   const { table, recordCount, isLoading } = useDataGrid();
+  const isFetching = props.isFetching ?? isLoading;
 
   const defaultProps: Partial<DataGridPaginationProps> = {
     sizes: [5, 10, 25, 50, 100],
@@ -94,6 +96,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
               table.setPageIndex(i);
             }
           }}
+          disabled={isFetching}
         >
           {i + 1}
         </Button>,
@@ -111,6 +114,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
           className={btnBaseClasses}
           variant="ghost"
           onClick={() => table.setPageIndex(currentGroupStart - 1)}
+          disabled={isFetching}
         >
           {mergedProps.ellipsisText}
         </Button>
@@ -128,6 +132,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
           variant="ghost"
           size="icon-sm"
           onClick={() => table.setPageIndex(currentGroupEnd)}
+          disabled={isFetching}
         >
           {mergedProps.ellipsisText}
         </Button>
@@ -139,6 +144,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
   return (
     <div
       data-slot="data-grid-pagination"
+      aria-busy={isFetching || undefined}
       className={cn(
         'flex grow flex-col flex-wrap items-center justify-between gap-2.5 py-2.5 sm:flex-row sm:py-0',
         mergedProps.className,
@@ -153,6 +159,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
               {mergedProps.rowsPerPageLabel}
             </div>
             <Select
+              disabled={isFetching}
               value={`${pageSize}`}
               onValueChange={(value) => {
                 const newPageSize = Number(value);
@@ -183,7 +190,10 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
         ) : (
           <>
             <div className="text-muted-foreground order-2 text-sm text-nowrap sm:order-1">
-              {paginationInfo}
+              <span className="inline-flex items-center gap-1.5">
+                {isFetching && <LoaderCircleIcon className="size-3 animate-spin" />}
+                {paginationInfo}
+              </span>
             </div>
             {pageCount > 1 && (
               <div className="order-1 flex items-center space-x-1">
@@ -192,7 +202,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
                   variant="ghost"
                   className={btnArrowClasses}
                   onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
+                  disabled={isFetching || !table.getCanPreviousPage()}
                 >
                   <span className="sr-only">
                     {mergedProps.previousPageLabel}
@@ -211,7 +221,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
                   variant="ghost"
                   className={btnArrowClasses}
                   onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
+                  disabled={isFetching || !table.getCanNextPage()}
                 >
                   <span className="sr-only">{mergedProps.nextPageLabel}</span>
                   <ChevronRightIcon className="size-4" />

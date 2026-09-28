@@ -306,7 +306,6 @@ export function DataGridView({
     <ReuiDataGrid
       table={table}
       recordCount={records.total}
-      isLoading={isLoading}
       emptyMessage={t('crud.list.empty', {
         resource: resource.title,
       })}
@@ -355,7 +354,7 @@ export function DataGridView({
             />
           )}
           <Separator />
-          <DataGridScrollArea>
+          <DataGridScrollArea className="min-h-90">
             <DataGridTable />
           </DataGridScrollArea>
         </FramePanel>
@@ -363,6 +362,7 @@ export function DataGridView({
         {showPagination && (
           <FrameFooter>
             <DataGridPagination
+              isFetching={isLoading}
               sizes={resource.pagination.perPageOptions}
               info={t('crud.pagination.info')}
               nextPageLabel={t('crud.pagination.next')}
