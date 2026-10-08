@@ -531,9 +531,8 @@ final readonly class AdminPanelInstaller
             <<<'CONFIG'
 $1resolve: {
 $1    preserveSymlinks: true,
-$1    // pnpm nests packages under .pnpm; combined with preserveSymlinks this
-$1    // yields two resolvable paths for React and breaks hooks in dev.
-$1    dedupe: ['react', 'react-dom'],
+$1    // Symlinked packages must share React and Inertia instances with the app.
+$1    dedupe: ['react', 'react-dom', '@inertiajs/react', '@inertiajs/core'],
 $1    alias: {
 $1        '@admin-panel': fileURLToPath(
 $1            new URL('./vendor/parse/admin-panel/resources/js', import.meta.url),

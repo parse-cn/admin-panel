@@ -11,7 +11,7 @@ import { serializeFilters } from "../data-grid/use-data-grid-query";
 import { DeleteRecordDialogContent } from "./delete-record-dialog";
 import { CrudForm } from "./crud-form";
 import { CrudShow } from "./crud-show";
-import type { CrudRecord, CrudRecordAction } from "./types";
+import type { CrudFormData, CrudRecord, CrudRecordAction } from "./types";
 
 type WidgetMode = "modal" | "drawer" | "inline";
 
@@ -160,7 +160,7 @@ export function CrudWidget({
     setFormRecord(record);
   }
 
-  async function submitForm(values: Record<string, string>) {
+  async function submitForm(values: CrudFormData) {
     if (!data || formRecord === undefined) {
       return;
     }
