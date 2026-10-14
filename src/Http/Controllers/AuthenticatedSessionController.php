@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Parse\AdminPanel\Http\Requests\LoginRequest;
+use Parse\AdminPanel\Auth\TotpSecret;
+use Parse\AdminPanel\Auth\TwoFactorSession;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 
 final class AuthenticatedSessionController extends Controller
@@ -26,12 +28,21 @@ final class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, TwoFactorSession $twoFactor): RedirectResponse
     {
-        $request->authenticate();
-        $request->session()->regenerate();
-
+        $user = $request->authenticate();
         $panel = $this->panels->current($request);
+        $request->session()->forget($twoFactor->key($panel, 'verified'));
+        $request->session()->forget($twoFactor->key($panel, 'pending'));
+
+        if ($panel->twoFactorEnabled && ($record = TotpSecret::forUser($user)->first()) !== null) {
+            $twoFactor->begin($request, $panel, $user, $record, $request->boolean('remember'));
+
+            return to_route($panel->route('two-factor.challenge'));
+        }
+
+        Auth::guard($panel->guard)->login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
 
         return redirect()->intended(route($panel->route('dashboard')));
     }

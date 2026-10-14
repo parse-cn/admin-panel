@@ -1,5 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { useState } from 'react';
+import { TwoFactorSettings } from './two-factor-settings';
+import type { TwoFactorSettingsProps } from './two-factor-settings';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { Button } from '@admin-panel/ui/components/ui/button';
 import {
@@ -28,8 +30,10 @@ import { useAdminPanelI18n } from '../../i18n/admin-panel-i18n';
 
 export function SecurityContent({
   passwordUpdateUrl,
+  twoFactor,
 }: {
   passwordUpdateUrl: string;
+  twoFactor?: TwoFactorSettingsProps | null;
 }) {
   const [open, setOpen] = useState(false);
   const { t } = useAdminPanelI18n();
@@ -48,7 +52,7 @@ export function SecurityContent({
               label={t('account.password')}
               onClick={() => setOpen(true)}
             />
-            <SecurityRow label={t('account.google_authenticator')} />
+            {twoFactor && <TwoFactorSettings settings={twoFactor} />}
             <SecurityRow label={t('account.active_sessions')} />
           </div>
         </FramePanel>

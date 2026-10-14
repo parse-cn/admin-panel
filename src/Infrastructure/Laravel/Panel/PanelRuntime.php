@@ -53,6 +53,8 @@ final readonly class PanelRuntime
         private AdminPanelPageRegistry $pages,
         private AdminPanelDashboard $dashboard,
         private AdminPanelUploadRegistry $uploads,
+        public bool $twoFactorEnabled = false,
+        public bool $twoFactorRequired = false,
     ) {}
 
     /**

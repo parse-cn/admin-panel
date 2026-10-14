@@ -38,6 +38,7 @@ import type { AdminPanelPageProps } from '../types';
 import { useAdminPanelI18n } from '../i18n/admin-panel-i18n';
 import { PreferencesContent } from './profile/preferences-content';
 import { SecurityContent } from './profile/security-content';
+import type { TwoFactorSettingsProps } from './profile/two-factor-settings';
 
 export type ProfilePageProps = AdminPanelPageProps & {
   profile: {
@@ -46,6 +47,7 @@ export type ProfilePageProps = AdminPanelPageProps & {
   };
   profileUpdateUrl: string;
   passwordUpdateUrl: string;
+  twoFactor?: TwoFactorSettingsProps | null;
   avatarUploadUrl: string | null;
   translations: {
     title: string;
@@ -71,6 +73,7 @@ export default function Profile() {
     profile,
     profileUpdateUrl,
     passwordUpdateUrl,
+    twoFactor,
     tabUrls,
     translations,
   } = usePage<ProfilePageProps>().props;
@@ -253,7 +256,7 @@ export default function Profile() {
             <PreferencesContent />
           </div>
           <div className={activeTab === 'security' ? '' : 'hidden'}>
-            <SecurityContent passwordUpdateUrl={passwordUpdateUrl} />
+            <SecurityContent passwordUpdateUrl={passwordUpdateUrl} twoFactor={twoFactor} />
           </div>
         </div>
       </div>
@@ -291,6 +294,7 @@ function AccountSecurityContent({
   passwordUpdateUrl,
 }: {
   passwordUpdateUrl: string;
+  twoFactor?: TwoFactorSettingsProps | null;
 }) {
   const [showPasswords, setShowPasswords] = useState(false);
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);

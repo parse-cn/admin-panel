@@ -35,6 +35,7 @@ return [
                 'guard' => 'admin_panel',
                 'provider' => 'users',
                 'model' => User::class,
+                'two_factor' => ['enabled' => true, 'required' => false],
             ],
         ],
     ],

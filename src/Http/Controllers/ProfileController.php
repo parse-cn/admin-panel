@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Parse\AdminPanel\Auth\TotpSecret;
 use Parse\AdminPanel\Http\Requests\UpdatePasswordRequest;
 use Parse\AdminPanel\Http\Requests\UpdateProfileRequest;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
@@ -81,6 +82,17 @@ final class ProfileController extends Controller
                 ? null
                 : route($panel->route('uploads.store'), ['purpose' => $avatarUpload['purpose']]),
             'activeTab' => $activeTab,
+            'twoFactor' => $panel->twoFactorEnabled && $activeTab === 'security' ? [
+                'required' => $panel->twoFactorRequired,
+                'enabled' => ($record = TotpSecret::forUser($user)->first()) !== null,
+                'recoveryCodesRemaining' => $record === null ? 0 : count($record->recovery_codes),
+                'startUrl' => route($panel->route('profile.two-factor.start')),
+                'confirmUrl' => route($panel->route('profile.two-factor.confirm')),
+                'cancelUrl' => route($panel->route('profile.two-factor.cancel')),
+                'regenerateUrl' => route($panel->route('profile.two-factor.recovery-codes')),
+                'destroyUrl' => route($panel->route('profile.two-factor.destroy')),
+                'logoutUrl' => route($panel->route('logout')),
+            ] : null,
             'tabUrls' => [
                 'profile' => route($panel->route('profile')),
                 'preferences' => route($panel->route('profile.preferences')),

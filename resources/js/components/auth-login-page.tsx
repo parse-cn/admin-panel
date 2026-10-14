@@ -53,7 +53,7 @@ type NoiseTextureProps = ComponentProps<'svg'> & {
   slope?: number;
 };
 
-function NoiseTexture({
+export function NoiseTexture({
   className,
   frequency = 0.5,
   noiseOpacity = 0.28,
@@ -116,7 +116,7 @@ function ParseLogo() {
   );
 }
 
-function AuthLogo({ icon: Icon }: { icon?: LucideIcon }) {
+export function AuthLogo({ icon: Icon }: { icon?: LucideIcon }) {
   return (
     <Item
       aria-hidden="true"
@@ -130,7 +130,7 @@ function AuthLogo({ icon: Icon }: { icon?: LucideIcon }) {
   );
 }
 
-function Footer({ children }: { children: ReactNode }) {
+export function Footer({ children }: { children: ReactNode }) {
   return (
     <footer className="relative z-10 bg-transparent">
       <div className="mx-auto flex max-w-4xl items-center justify-center px-6 py-4 text-center">

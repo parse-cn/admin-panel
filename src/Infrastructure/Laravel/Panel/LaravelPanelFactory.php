@@ -73,6 +73,24 @@ final class LaravelPanelFactory
             );
         }
 
+        $twoFactorEnabled = data_get($configuration, 'auth.two_factor.enabled', false);
+        if (! is_bool($twoFactorEnabled)) {
+            throw new InvalidArgumentException('Admin panel configuration [auth.two_factor.enabled] must be boolean.');
+        }
+        $twoFactorRequired = data_get($configuration, 'auth.two_factor.required', false);
+        if (! is_bool($twoFactorRequired)) {
+            throw new InvalidArgumentException('Admin panel configuration [auth.two_factor.required] must be boolean.');
+        }
+        if ($twoFactorRequired && ! $twoFactorEnabled) {
+            throw new InvalidArgumentException('Required two-factor authentication requires [auth.two_factor.enabled] to be true.');
+        }
+        if ($twoFactorEnabled && ! is_subclass_of($userModel, \Illuminate\Contracts\Auth\Authenticatable::class)) {
+            throw new InvalidArgumentException('Two-factor authentication requires an Authenticatable user model.');
+        }
+        if ($twoFactorEnabled && ! $profile['enabled']) {
+            throw new InvalidArgumentException('Two-factor authentication requires the profile security page.');
+        }
+
         $panel = new PanelRuntime(
             id: $id,
             domain: $this->nullableString($configuration, 'domain'),
@@ -100,6 +118,8 @@ final class LaravelPanelFactory
             pages: new AdminPanelPageRegistry,
             dashboard: new AdminPanelDashboard(DashboardController::class),
             uploads: new AdminPanelUploadRegistry,
+            twoFactorEnabled: $twoFactorEnabled,
+            twoFactorRequired: $twoFactorRequired,
         );
         $panel->imageUpload(
             purpose: 'image',

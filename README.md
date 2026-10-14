@@ -1027,3 +1027,55 @@ pnpm build
 - Resource 菜单和授权正确
 - 多租户记录不能跨租户读取或修改
 - 路由可以缓存
+
+## 验证器二次验证（TOTP）
+
+二次验证默认关闭，使用 Google Authenticator 或其他标准 TOTP 验证器，无需申请 Google 服务。
+
+先在宿主项目发布迁移并执行：
+
+```bash
+php artisan vendor:publish --tag=admin-panel-migrations
+php artisan migrate
+```
+
+在需要启用功能的 Panel 配置中添加：
+
+```php
+'auth' => [
+    'guard' => 'admin_panel',
+    'provider' => 'users',
+    'model' => User::class,
+    'two_factor' => ['enabled' => true],
+],
+```
+
+如需强制所有用户使用 2FA，将配置设为：
+
+```php
+'two_factor' => ['enabled' => true, 'required' => true],
+```
+
+`required` 默认是 `false`。开启后，未绑定用户只能访问安全设置进行绑定或退出登录，
+其他后台页面和接口均被拦截。完成绑定后可继续使用后台，后续登录仍需二次验证。
+强制模式不允许关闭 2FA，但仍可重新生成恢复码。`required: true` 必须同时设置 `enabled: true`。
+
+用户模型需要实现 Laravel `Authenticatable` 契约，且 Panel 的个人设置页面必须启用。
+无需修改用户表或添加 Trait。已有宿主项目需要重新运行 `php artisan admin-panel:install`
+以同步前端依赖声明，再使用宿主已有的 Node 环境安装依赖和构建资源。
+React 使用 `qrcode.react` 本地渲染二维码，PHP 使用 `pragmarx/google2fa` 验证动态码。
+
+用户可在个人设置的安全页面验证当前密码后绑定验证器。绑定操作有 5 分钟有效期，
+扫码后必须输入正确的六位验证码才会启用。恢复码仅在绑定或重新生成时展示一次，
+每个恢复码只能使用一次，数据库只保存哈希；重新生成会立即废弃旧恢复码。
+解绑及重新生成恢复码均要求当前密码和有效动态码或恢复码。解绑后退出当前会话。
+
+密钥加密保存在独立的 `admin_panel_totp_secrets` 表，通过用户模型类和用户标识定位，
+支持整数及 UUID 标识。同一用户跨 Panel 共用绑定，但二次验证会话标记按 Panel 隔离。
+请保持服务器时钟同步并妥善保存 `APP_KEY`；动态码允许前后一个 30 秒周期的时间偏差，
+成功验证后禁止重复使用相同时间步。
+
+已绑定用户先验证密码，再进入有 5 分钟有效期的验证码挑战，完成后才正式登录。
+“记住我”恢复的会话及共享 guard 的已有会话仍需通过当前 Panel 的二次验证检查。
+登录验证码和管理接口均限流，关闭功能配置不会删除已有绑定。
+验证器与恢复码全部丢失时，由宿主通过受控运维流程删除该用户的绑定记录，再重新绑定。

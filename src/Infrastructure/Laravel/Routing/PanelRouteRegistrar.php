@@ -10,8 +10,11 @@ use Parse\AdminPanel\Http\Controllers\AuthenticatedSessionController;
 use Parse\AdminPanel\Http\Controllers\GlobalSearchController;
 use Parse\AdminPanel\Http\Controllers\LocaleController;
 use Parse\AdminPanel\Http\Controllers\ProfileController;
+use Parse\AdminPanel\Http\Controllers\TwoFactorChallengeController;
+use Parse\AdminPanel\Http\Controllers\TwoFactorController;
 use Parse\AdminPanel\Http\Controllers\UploadController;
 use Parse\AdminPanel\Http\Middleware\AuthenticateAdminPanel;
+use Parse\AdminPanel\Http\Middleware\EnsurePanelTwoFactor;
 use Parse\AdminPanel\Http\Middleware\HandleAdminPanelInertiaRequests;
 use Parse\AdminPanel\Http\Middleware\RedirectIfAdminPanelAuthenticated;
 use Parse\AdminPanel\Http\Middleware\ResolveAdminPanel;
@@ -47,7 +50,13 @@ final class PanelRouteRegistrar
                     Route::post('login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
                 });
 
-                Route::middleware(AuthenticateAdminPanel::using($panel->guard))->group(function () use ($panel): void {
+                if ($panel->twoFactorEnabled) {
+                    Route::get('login/two-factor', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+                    Route::post('login/two-factor', [TwoFactorChallengeController::class, 'verify'])->middleware('throttle:5,1')->name('two-factor.verify');
+                    Route::delete('login/two-factor', [TwoFactorChallengeController::class, 'cancel'])->name('two-factor.cancel');
+                }
+
+                Route::middleware([AuthenticateAdminPanel::using($panel->guard), EnsurePanelTwoFactor::class])->group(function () use ($panel): void {
                     if ($panel->dashboardUri() !== '') {
                         Route::redirect('/', $panel->dashboardUri());
                     }
@@ -61,6 +70,15 @@ final class PanelRouteRegistrar
                         Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
                         Route::get('profile/preferences', [ProfileController::class, 'preferences'])->name('profile.preferences');
                         Route::get('profile/security', [ProfileController::class, 'security'])->name('profile.security');
+                        if ($panel->twoFactorEnabled) {
+                            Route::prefix('profile/two-factor')->name('profile.two-factor.')->middleware('throttle:5,1')->group(function (): void {
+                                Route::post('/', [TwoFactorController::class, 'start'])->name('start');
+                                Route::post('confirm', [TwoFactorController::class, 'confirm'])->name('confirm');
+                                Route::delete('pending', [TwoFactorController::class, 'cancel'])->name('cancel');
+                                Route::post('recovery-codes', [TwoFactorController::class, 'regenerate'])->name('recovery-codes');
+                                Route::delete('/', [TwoFactorController::class, 'destroy'])->name('destroy');
+                            });
+                        }
                     }
 
                     Route::get('global-search', GlobalSearchController::class)->name('global-search');

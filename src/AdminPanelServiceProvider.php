@@ -80,6 +80,9 @@ final class AdminPanelServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/admin-panel.php' => config_path('admin-panel.php'),
         ], 'admin-panel-config');
+        $this->publishesMigrations([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
+        ], 'admin-panel-migrations');
         $this->publishes([
             __DIR__.'/../resources/lang' => lang_path('vendor/admin-panel'),
         ], 'admin-panel-translations');

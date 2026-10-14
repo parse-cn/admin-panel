@@ -6,7 +6,7 @@ import { SecurityContent } from './security-content';
 import { useAdminPanelI18n } from '../../i18n/admin-panel-i18n';
 
 export default function ProfileSecurity() {
-  const { auth, navigation, passwordUpdateUrl, tabUrls } =
+  const { auth, navigation, passwordUpdateUrl, twoFactor, tabUrls } =
     usePage<ProfilePageProps>().props;
   const { t } = useAdminPanelI18n();
   if (!auth.user || !navigation) return null;
@@ -39,7 +39,7 @@ export default function ProfileSecurity() {
             },
           ]}
         />
-        <SecurityContent passwordUpdateUrl={passwordUpdateUrl} />
+        <SecurityContent passwordUpdateUrl={passwordUpdateUrl} twoFactor={twoFactor} />
       </div>
     </AdminPanelLayout>
   );

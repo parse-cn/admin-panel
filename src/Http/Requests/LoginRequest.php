@@ -2,6 +2,7 @@
 
 namespace Parse\AdminPanel\Http\Requests;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,7 +30,7 @@ final class LoginRequest extends FormRequest
         ];
     }
 
-    public function authenticate(): void
+    public function authenticate(): Authenticatable
     {
         $this->ensureIsNotRateLimited();
 
@@ -40,12 +41,11 @@ final class LoginRequest extends FormRequest
             $credentials['status'] = $activeStatus;
         }
 
-        $authenticated = Auth::guard($this->guard())->attempt(
-            $credentials,
-            $this->boolean('remember'),
-        );
+        $guard = Auth::guard($this->guard());
+        $provider = $guard->getProvider();
+        $user = $provider->retrieveByCredentials($credentials);
 
-        if (! $authenticated) {
+        if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             RateLimiter::hit($this->throttleKey(), 60);
 
             throw ValidationException::withMessages([
@@ -53,7 +53,10 @@ final class LoginRequest extends FormRequest
             ]);
         }
 
+        $provider->rehashPasswordIfRequired($user, $credentials);
         RateLimiter::clear($this->throttleKey());
+
+        return $user;
     }
 
     private function ensureIsNotRateLimited(): void

@@ -6,7 +6,8 @@
         "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
-        "laravel/wayfinder": "^0.1"
+        "laravel/wayfinder": "^0.1",
+        "pragmarx/google2fa": "^9.0"
     },
     "autoload": {
         "psr-4": {
