@@ -21,6 +21,7 @@ final readonly class PanelRuntime
     private Collection $widgets;
 
     /**
+     * @param  array<string, mixed>  $rolesNavigation
      * @param  list<string>  $permissions
      * @param  list<string>  $middleware
      * @param  list<int>  $perPageOptions
@@ -64,6 +65,7 @@ final readonly class PanelRuntime
         public bool $authorizationEnabled = true,
         public ?string $permissionsFile = null,
         public array $permissions = [],
+        public array $rolesNavigation = [],
     ) {
         $this->widgets = new Collection;
     }

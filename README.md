@@ -1263,6 +1263,34 @@ Spatie 配置与迁移由宿主维护；本包不会重复发布权限建表迁�
 `permission.php`。管理界面保留在包内，宿主通过模型配置和 Laravel Policy 扩展，
 更新时无需复制角色管理源码。
 
+角色表单和详情会翻译常见权限操作，分组优先复用对应 Resource 的名称；未知权限保留原 key。
+详情标签悬停可查看原始 key。宿主可通过 Laravel 语言覆盖文件中的
+`authorization.permission_labels`（按权限 key 嵌套）、`authorization.actions` 和
+`authorization.permission_groups` 自定义展示，不改变权限名称及数据库关联。
+
+### 角色导航配置
+
+在对应 Panel 配置的 `navigation.roles` 中调整内置角色管理入口：
+
+```php
+'navigation' => [
+    'roles' => [
+        'label' => '角色管理',
+        'icon' => 'shield-user-line',
+        'group' => '权限管理',
+        'groupSort' => 30,
+        'section' => '系统设置',
+        'sectionSort' => 20,
+        'sort' => 10,
+        'hidden' => false,
+    ],
+],
+```
+
+支持 `badge` 和 `activeRoutes`；label、group、section、badge 可使用翻译 key。
+省略字段沿用原默认值，各 Panel 独立配置。`hidden` 只隐藏导航，不关闭角色路由；
+角色入口始终需要当前 guard 的 `roles.viewAny` 权限。
+
 ### 权限清单与部署同步
 
 开发环境生成权限清单和 Policy，提交 Git；生产环境只同步已发布清单：

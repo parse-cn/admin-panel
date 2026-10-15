@@ -133,6 +133,7 @@ final class LaravelPanelFactory
             authorizationEnabled: $authorizationEnabled,
             permissionsFile: $this->nullableString($configuration, 'authorization.permissions_file'),
             permissions: PermissionManifest::normalize(data_get($configuration, 'authorization.permissions', [])),
+            rolesNavigation: $this->rolesNavigation($configuration),
         );
         $panel->imageUpload(
             purpose: 'image',
@@ -157,6 +158,20 @@ final class LaravelPanelFactory
         ));
 
         return $this->runtimePanels->register($panel);
+    }
+
+    /**
+     * @param  array<string, mixed>  $configuration
+     * @return array<string, mixed>
+     */
+    private function rolesNavigation(array $configuration): array
+    {
+        $navigation = data_get($configuration, 'navigation.roles', []);
+        if (! is_array($navigation)) {
+            throw new InvalidArgumentException('Admin panel configuration [navigation.roles] must be an array.');
+        }
+
+        return $navigation;
     }
 
     /**

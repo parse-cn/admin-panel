@@ -30,6 +30,12 @@ return [
                 'name' => config('app.name', 'Admin'),
                 'logo' => null,
             ],
+            'navigation' => [
+                'roles' => [
+                    'groupSort' => 90,
+                    'sort' => 0,
+                ],
+            ],
             'pagination' => [
                 'per_page' => 10,
                 'per_page_options' => [5, 10, 15, 25, 50],

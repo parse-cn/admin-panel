@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,8 @@ use Parse\AdminPanel\Resources\AdminPanelResource;
 final class RoleResource extends AdminPanelResource
 {
     protected static bool $isGloballySearchable = false;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     private static function panel(): PanelRuntime
     {
@@ -43,6 +46,11 @@ final class RoleResource extends AdminPanelResource
         return __('admin-panel::messages.authorization.role');
     }
 
+    public static function showComponent(): string
+    {
+        return 'authorization/roles/show-content';
+    }
+
     public static function query(): Builder
     {
         return parent::query()->where('guard_name', static::panel()->guard)->withCount('permissions');
@@ -60,8 +68,11 @@ final class RoleResource extends AdminPanelResource
     public static function columns(): array
     {
         return [
-            ['name' => 'name', 'label' => __('admin-panel::messages.authorization.name'), 'searchable' => true, 'sortable' => true],
-            ['name' => 'permissions_count', 'label' => __('admin-panel::messages.authorization.permission_count')],
+            ['name' => 'name', 'label' => __('admin-panel::messages.authorization.name'), 'type' => 'identity', 'link' => 'show', 'searchable' => true, 'sortable' => true],
+            ['name' => 'permissions_count', 'label' => __('admin-panel::messages.authorization.permission_count'), 'sortable' => true],
+            ['name' => 'guard_name', 'label' => __('admin-panel::messages.authorization.guard'), 'type' => 'badge'],
+            ['name' => 'created_at', 'label' => __('admin-panel::messages.authorization.created_at'), 'type' => 'datetime', 'sortable' => true],
+            ['name' => 'updated_at', 'label' => __('admin-panel::messages.authorization.updated_at'), 'type' => 'datetime', 'sortable' => true],
         ];
     }
 
@@ -79,15 +90,40 @@ final class RoleResource extends AdminPanelResource
                 'writeOnly' => true,
                 'options' => $permissions->map(fn (Model $permission): array => [
                     'value' => (string) $permission->getKey(),
-                    'label' => $permission->name,
-                    'group' => str_contains($permission->name, '.')
-                        ? Str::beforeLast($permission->name, '.')
-                        : (str_contains($permission->name, ':')
-                            ? Str::after($permission->name, ':')
-                            : __('admin-panel::messages.authorization.other')),
+                    'label' => static::permissionLabel($permission->name),
+                    'group' => static::permissionGroupLabel(static::permissionGroup($permission->name)),
                 ])->all(),
             ],
         ];
+    }
+
+    private static function permissionGroup(string $permission): string
+    {
+        return str_contains($permission, '.') ? Str::beforeLast($permission, '.') : 'other';
+    }
+
+    private static function permissionLabel(string $permission): string
+    {
+        $key = 'admin-panel::messages.authorization.permission_labels.'.$permission;
+        if (Lang::has($key)) {
+            return __($key);
+        }
+        $action = str_contains($permission, '.') ? Str::afterLast($permission, '.') : $permission;
+        $key = 'admin-panel::messages.authorization.actions.'.$action;
+
+        return Lang::has($key) ? __($key) : $permission;
+    }
+
+    private static function permissionGroupLabel(string $group): string
+    {
+        foreach ([...static::panel()->resources(), ...static::panel()->widgets()] as $registration) {
+            if ($registration->resource::permissionPrefix() === $group) {
+                return $registration->resource::title();
+            }
+        }
+        $key = 'admin-panel::messages.authorization.permission_groups.'.$group;
+
+        return Lang::has($key) ? __($key) : $group;
     }
 
     public static function rules(?Model $record = null): array
@@ -105,9 +141,30 @@ final class RoleResource extends AdminPanelResource
     public static function record(Model $record): array
     {
         $serialized = parent::record($record);
-        $serialized['values']['permission_ids'] = $record->permissions()->pluck($record->permissions()->getRelated()->getQualifiedKeyName())->map(strval(...))->all();
+        $permissions = $record->permissions()->orderBy('name')->get();
+        $serialized['values']['permission_ids'] = $permissions->modelKeys();
+        $serialized['values']['permission_ids'] = array_map(strval(...), $serialized['values']['permission_ids']);
+        $serialized['values']['permission_groups'] = $permissions
+            ->groupBy(fn (Model $permission): string => str_contains($permission->getAttribute('name'), '.')
+                ? Str::beforeLast($permission->getAttribute('name'), '.')
+                : __('admin-panel::messages.authorization.other'))
+            ->map(fn ($items, string $group): array => [
+                'name' => $group,
+                'label' => static::permissionGroupLabel($group),
+                'permissions' => $items->pluck('name')->values()->all(),
+            ])->values()->all();
+
+        $serialized['values']['permission_labels'] = $permissions->mapWithKeys(fn (Model $permission): array => [
+            $permission->getAttribute('name') => static::permissionLabel($permission->getAttribute('name')),
+        ])->all();
 
         return $serialized;
+    }
+
+    public static function recordForIndex(Model $record): array
+    {
+        // Keep the grouped permission payload on detail/edit responses only.
+        return parent::record($record);
     }
 
     public static function createRecord(array $attributes, Authenticatable $user): Model

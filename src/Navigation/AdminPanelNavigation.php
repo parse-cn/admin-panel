@@ -103,19 +103,29 @@ final class AdminPanelNavigation
                 ];
             })
             ->filter();
-        if ($panel->authorizationEnabled && PanelPermissions::allows($request->user($panel->guard), 'roles.viewAny', $panel)) {
+        $rolesNavigation = array_replace([
+            'label' => 'admin-panel::messages.authorization.roles',
+            'icon' => 'shield-user-line',
+            'group' => 'admin-panel::messages.authorization.group',
+            'groupSort' => 90,
+            'section' => 'admin-panel::messages.navigation.workspace',
+            'sectionSort' => 0,
+            'sort' => 0,
+            'hidden' => false,
+        ], $panel->rolesNavigation);
+        if (! $rolesNavigation['hidden'] && $panel->authorizationEnabled && PanelPermissions::allows($request->user($panel->guard), 'roles.viewAny', $panel)) {
             $pageItems->push([
-                'group' => __('admin-panel::messages.authorization.group'),
-                'groupSort' => 90,
-                'section' => __('admin-panel::messages.navigation.workspace'),
-                'sectionSort' => 0,
-                'sort' => 0,
+                'group' => __($rolesNavigation['group']),
+                'groupSort' => $rolesNavigation['groupSort'],
+                'section' => __($rolesNavigation['section']),
+                'sectionSort' => $rolesNavigation['sectionSort'],
+                'sort' => $rolesNavigation['sort'],
                 'item' => [
-                    'label' => __('admin-panel::messages.authorization.roles'),
+                    'label' => __($rolesNavigation['label']),
                     'href' => route($panel->route('roles')),
-                    'icon' => 'shield-user-line',
-                    'badge' => null,
-                    'active' => $request->routeIs($panel->route('roles').'*'),
+                    'icon' => $rolesNavigation['icon'],
+                    'badge' => isset($rolesNavigation['badge']) ? __($rolesNavigation['badge']) : null,
+                    'active' => $this->isActive($request, $panel->route('roles'), $rolesNavigation),
                 ],
             ]);
         }
