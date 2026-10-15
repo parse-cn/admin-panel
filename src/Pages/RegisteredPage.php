@@ -19,5 +19,6 @@ final readonly class RegisteredPage
         public string $name,
         public string|array $action,
         public ?array $navigation,
+        public ?string $permission = null,
     ) {}
 }

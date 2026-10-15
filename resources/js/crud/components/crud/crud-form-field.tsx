@@ -1,6 +1,7 @@
 import { Field, FieldError, FieldLabel } from '@admin-panel/ui';
 import type { ReactNode } from 'react';
 import { useCrudI18n } from '../../i18n/crud-i18n';
+import { CheckboxListField } from './fields/checkbox-list-field';
 import { BooleanField } from './fields/boolean-field';
 import { ImageField } from './fields/image-field';
 import { ImageUrlField } from './fields/image-url-field';
@@ -50,7 +51,15 @@ export function CrudFormField({
   const stringValue = String(value ?? '');
   let control: ReactNode;
 
-  if (field.type === 'image-url')
+  if (field.type === 'checkbox-list')
+    control = (
+      <CheckboxListField
+        field={field}
+        value={Array.isArray(value) ? value : []}
+        onChange={(next) => onChange(field.name, next)}
+      />
+    );
+  else if (field.type === 'image-url')
     control = (
       <ImageUrlField
         error={error}

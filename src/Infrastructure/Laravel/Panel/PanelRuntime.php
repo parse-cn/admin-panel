@@ -4,6 +4,7 @@ namespace Parse\AdminPanel\Infrastructure\Laravel\Panel;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Parse\AdminPanel\Crud\Definition\CrudResourceRegistry;
 use Parse\AdminPanel\Pages\AdminPanelDashboard;
 use Parse\AdminPanel\Pages\AdminPanelPageRegistry;
@@ -16,8 +17,12 @@ use Parse\AdminPanel\Uploads\RegisteredUpload;
 
 final readonly class PanelRuntime
 {
+    /** @var Collection<int, RegisteredResource> */
+    private Collection $widgets;
+
     /**
      * @param  list<string>  $middleware
+     * @param  list<int>  $perPageOptions
      * @param  class-string<Model>  $userModel
      * @param  class-string<SharesPanelProps>|null  $sharedProps
      * @param  array<string, string>  $supportedLocales
@@ -55,7 +60,10 @@ final readonly class PanelRuntime
         private AdminPanelUploadRegistry $uploads,
         public bool $twoFactorEnabled = false,
         public bool $twoFactorRequired = false,
-    ) {}
+        public bool $authorizationEnabled = true,
+    ) {
+        $this->widgets = new Collection;
+    }
 
     /**
      * @param  class-string<AdminPanelResource>  $resource
@@ -98,6 +106,15 @@ final readonly class PanelRuntime
         }
 
         $this->crudResources->registerWidget($resource, $only, $except);
+        $this->widgets->push(new RegisteredResource($resource::routeName(), $resource, $only, $except));
+    }
+
+    /**
+     * @return list<RegisteredResource>
+     */
+    public function widgets(): array
+    {
+        return $this->widgets->all();
     }
 
     /**
@@ -118,8 +135,9 @@ final readonly class PanelRuntime
         string $name,
         string|array $action,
         ?array $navigation = null,
+        ?string $permission = null,
     ): void {
-        $this->pages->page($uri, $name, $action, $navigation);
+        $this->pages->page($uri, $name, $action, $navigation, $permission);
     }
 
     /**

@@ -395,6 +395,13 @@ abstract class EloquentCrudResource extends CrudResource
         return static::prepareForPersistence($attributes);
     }
 
+    public static function updateRecord(Model $record, array $attributes): Model
+    {
+        $record->update(static::prepareForUpdate($attributes, $record));
+
+        return $record;
+    }
+
     public static function deleteRecord(Model $record, Authenticatable $user): void
     {
         $record->delete();

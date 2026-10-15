@@ -1,0 +1,20 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Contracts\Auth\Authenticatable;
+use Parse\AdminPanel\Authorization\PanelPermissions;
+use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
+
+class {{ class }}
+{
+{{ methods }}
+    private function allows(Authenticatable $user, string $permission): bool
+    {
+        $panel = request()->attributes->get('admin_panel');
+
+        return $panel instanceof PanelRuntime
+            && $panel->authorizationEnabled
+            && PanelPermissions::allows($user, $permission, $panel);
+    }
+}

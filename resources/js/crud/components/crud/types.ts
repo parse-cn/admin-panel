@@ -1,6 +1,7 @@
 export type CrudOption = {
   label: string;
   value?: string;
+  group?: string;
   variant?:
     | 'default'
     | 'primary'
@@ -94,6 +95,7 @@ export type CrudField = {
     | 'email'
     | 'password'
     | 'textarea'
+    | 'checkbox-list'
     | 'ip-list'
     | 'key-value'
     | 'select'

@@ -91,6 +91,14 @@ final class LaravelPanelFactory
             throw new InvalidArgumentException('Two-factor authentication requires the profile security page.');
         }
 
+        $authorizationEnabled = data_get($configuration, 'authorization.enabled', true);
+        if (! is_bool($authorizationEnabled)) {
+            throw new InvalidArgumentException('Admin panel configuration [authorization.enabled] must be boolean.');
+        }
+        if ($authorizationEnabled && config('permission.teams', false)) {
+            throw new InvalidArgumentException('Admin panel role management does not support Spatie teams.');
+        }
+
         $panel = new PanelRuntime(
             id: $id,
             domain: $this->nullableString($configuration, 'domain'),
@@ -120,6 +128,7 @@ final class LaravelPanelFactory
             uploads: new AdminPanelUploadRegistry,
             twoFactorEnabled: $twoFactorEnabled,
             twoFactorRequired: $twoFactorRequired,
+            authorizationEnabled: $authorizationEnabled,
         );
         $panel->imageUpload(
             purpose: 'image',

@@ -35,6 +35,7 @@ final class AdminPanelPageRegistry
         string $name,
         string|array $action,
         ?array $navigation,
+        ?string $permission = null,
     ): void {
         $uri = trim($uri, '/');
 
@@ -63,6 +64,7 @@ final class AdminPanelPageRegistry
             name: $name,
             action: $action,
             navigation: $navigation,
+            permission: $permission,
         );
     }
 

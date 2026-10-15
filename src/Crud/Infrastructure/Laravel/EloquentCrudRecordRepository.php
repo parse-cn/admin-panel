@@ -36,9 +36,7 @@ final class EloquentCrudRecordRepository implements CrudRecordRepository
             throw new \InvalidArgumentException('Invalid CRUD record.');
         }
 
-        $record->update($this->resource($resource)::prepareForUpdate($attributes, $record));
-
-        return $record;
+        return $this->resource($resource)::updateRecord($record, $attributes);
     }
 
     public function delete(string $resource, mixed $record, mixed $actor): void

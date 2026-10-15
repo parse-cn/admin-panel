@@ -1,6 +1,18 @@
 <?php
 
 return [
+    'authorization' => [
+        'group' => 'Access management',
+        'roles' => 'Roles',
+        'role' => 'Role',
+        'name' => 'Name',
+        'permissions' => 'Permissions',
+        'permission_count' => 'Permissions',
+        'other' => 'Other',
+        'select_all' => 'Select all',
+        'empty_permissions' => 'No options available.',
+        'role_in_use' => 'This role is assigned to users. Remove its assignments before deleting it.',
+    ],
     'two_factor' => [
         'copy_codes' => 'Copy all',
         'copied' => 'Copied',

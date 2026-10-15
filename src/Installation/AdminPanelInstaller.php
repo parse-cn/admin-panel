@@ -33,6 +33,7 @@ final readonly class AdminPanelInstaller
             $unchanged,
             $warnings,
         );
+        $this->installMigrations($applicationPath, $completed, $unchanged);
         $this->installAdminRoutes(
             $applicationPath,
             $completed,
@@ -65,6 +66,31 @@ final readonly class AdminPanelInstaller
         );
 
         return new AdminPanelInstallResult($completed, $unchanged, $warnings);
+    }
+
+    /**
+     * @param  list<string>  $completed
+     * @param  list<string>  $unchanged
+     */
+    private function installMigrations(
+        string $applicationPath,
+        array &$completed,
+        array &$unchanged,
+    ): void {
+        $destination = $applicationPath.'/database/migrations';
+        $this->files->ensureDirectoryExists($destination);
+
+        foreach ($this->files->glob(dirname(__DIR__, 2).'/database/migrations/*.php') as $source) {
+            $name = preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', basename($source));
+            if ($this->files->glob($destination.'/*_'.$name) !== [] || $this->files->exists($destination.'/'.$name)) {
+                $unchanged[] = "Migration [{$name}] already exists";
+
+                continue;
+            }
+
+            $this->files->copy($source, $destination.'/'.basename($source));
+            $completed[] = "Published migration [{$name}]";
+        }
     }
 
     /**
@@ -412,6 +438,17 @@ final readonly class AdminPanelInstaller
             }
         }
 
+        $contents = preg_replace(
+            '/^(\s*preserveSymlinks\s*:\s*)true\b/m',
+            '${1}false',
+            $contents,
+            -1,
+            $symlinkReplacementCount,
+        ) ?? $contents;
+        if ($symlinkReplacementCount > 0) {
+            $completed[] = 'Set Vite preserveSymlinks to false';
+        }
+
         $adminPanelAliasIsRegistered = str_contains($contents, "'@admin-panel'")
             || str_contains($contents, '"@admin-panel"');
 
@@ -530,7 +567,7 @@ final readonly class AdminPanelInstaller
             '/^(\s*)plugins:\s*(?:lazyPlugins\(\(\)\s*=>\s*)?\[/m',
             <<<'CONFIG'
 $1resolve: {
-$1    preserveSymlinks: true,
+$1    preserveSymlinks: false,
 $1    // Symlinked packages must share React and Inertia instances with the app.
 $1    dedupe: ['react', 'react-dom', '@inertiajs/react', '@inertiajs/core'],
 $1    alias: {

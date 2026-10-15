@@ -41,13 +41,14 @@ Composer 项目需要依赖该包：
 ```bash
 php artisan admin-panel:install
 pnpm install
-php artisan migrate
 pnpm build
 ```
 
 安装命令会：
 
 - 发布 `config/admin-panel.php`
+- 发布本包迁移和 Spatie 权限配置、迁移，然后执行 `migrate`（包含宿主项目全部待执行迁移）
+- 迁移成功后，按已启用权限的 Panel guard 初始化默认 `admin` 角色及角色管理权限
 - 创建 `routes/admin-panel.php`
 - 补充前端依赖
 - 创建 `resources/js/admin-panel.tsx` 并注册为 Admin Panel Vite 入口
@@ -59,8 +60,15 @@ pnpm build
 `pnpm install` 和 `pnpm build`。安装命令不会创建或修改业务 Panel 配置。
 
 安装器会把 Admin Panel 使用的前端包及其 Vite 运行时依赖（例如
-`@base-ui/utils`、`@tanstack/table-core`）声明为项目直接依赖；这保证 pnpm 与
-`preserveSymlinks: true` 的 Vite 配置可以正确解析 Base UI 的子模块。
+`@base-ui/utils`、`@tanstack/table-core`）声明为项目直接依赖。Vite 使用
+`preserveSymlinks: false`，重复安装时也会将已有的 `true` 配置更新为 `false`。
+
+安装命令默认发布本包迁移，以及 Spatie 的配置和迁移，保留已有文件。
+发布完成后自动执行 `migrate`，包含宿主项目全部待执行迁移。生产环境保留 Laravel 的确认提示；
+非交互部署可使用 `php artisan admin-panel:install --force`，该选项仅用于迁移确认，不会强制覆盖发布文件。
+安装会创建默认角色及权限，但不会修改用户模型或将角色分配给具体用户；按输出提示完成用户模型配置和管理员分配。
+相同 guard 只初始化一次，重复安装保留已有角色及额外权限，不创建重复数据。
+重复运行不会强制覆盖配置和已发布迁移。安装、迁移或 Wayfinder 生成失败时返回非零退出码。
 
 默认 Panel 复用 Laravel 的 `App\Models\User` 和 `users` provider。
 
@@ -1079,3 +1087,274 @@ React 使用 `qrcode.react` 本地渲染二维码，PHP 使用 `pragmarx/google2
 “记住我”恢复的会话及共享 guard 的已有会话仍需通过当前 Panel 的二次验证检查。
 登录验证码和管理接口均限流，关闭功能配置不会删除已有绑定。
 验证器与恢复码全部丢失时，由宿主通过受控运维流程删除该用户的绑定记录，再重新绑定。
+
+## 角色与权限
+
+角色权限底层使用 `spatie/laravel-permission`，沿用其默认表结构、模型配置和缓存机制。
+后台仅提供角色管理；权限在角色编辑表单中分组展示，不提供独立权限列表或权限 CRUD。
+
+### 安装与启用
+
+在宿主 Laravel 项目运行 `php artisan admin-panel:install` 会发布配置、迁移并执行数据库迁移；也可以单独发布 Spatie 文件，再执行迁移：
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
+```
+
+用户模型使用 Spatie trait，并明确支持哪些 guard：
+
+```php
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasRoles;
+
+    public function guardName(): array
+    {
+        return ['web', 'admin_panel'];
+    }
+}
+```
+
+权限控制默认开启，包括未显式设置 `authorization.enabled` 的 Panel。需要关闭时配置：
+
+```php
+'authorization' => ['enabled' => false],
+```
+
+显式关闭时，原有 Resource 授权行为保持不变。开启后，默认的
+`AdminPanelResource::authorize()` 使用当前用户的 Laravel Gate/Policy，未授权返回 403。
+已有 Resource 自定义的 `authorize()` 方法仍优先生效，需要业务自行接入。
+用户模型的 `HasRoles` 要求在处理 Panel HTTP 请求时检查，避免阻断首次安装、迁移及其他 Artisan 命令。
+
+角色与权限以 Panel 的 `auth.guard` 为范围：相同 guard 共享角色权限，不同 guard 分开管理。
+管理界面不允许客户端切换 guard。当前集成不支持 Spatie teams，启用 teams 时会明确报错，
+不会修改宿主的 teams 配置。
+
+安装命令已为每个启用权限的 guard 创建默认 `admin` 角色和以下六项权限。
+为首个管理员分配角色时执行（用户必须已存在）：
+
+```bash
+php artisan admin-panel:permissions-init --panel=admin_panel --user=1 --role=admin
+```
+
+初始化及角色分配命令共用以下管理权限定义；角色分配命令也会补齐缺失权限，重复运行不会删除已有权限或角色关联：
+
+```text
+roles.viewAny
+roles.view
+roles.create
+roles.update
+roles.delete
+users.assignRoles
+```
+
+角色管理入口为当前 Panel 下的 `/roles`，菜单需要 `roles.viewAny`。
+角色名称在当前 guard 内唯一，创建与更新会在 CRUD 事务中同步权限。
+有用户关联的角色禁止删除。具有角色创建或编辑权限的管理员可分配当前 guard 的全部权限，
+因此这些能力只应授予权限管理员。这里没有额外的超级管理员绕过机制。
+
+### 业务权限与 Policy
+
+权限可以通过下文的 Resource 生成命令、宿主 Seeder 或 Spatie API 维护。
+使用模型配置解析类，兼容宿主自定义 Permission 模型：
+
+```php
+$permissionModel = config('permission.models.permission');
+$permissionModel::findOrCreate('posts.update', 'admin_panel');
+```
+
+业务 Policy 负责权限和记录限制，例如：
+
+```php
+public function update(User $user, Post $post): bool
+{
+    $panel = app(\Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager::class)
+        ->current(request());
+
+    return \Parse\AdminPanel\Authorization\PanelPermissions::allows($user, 'posts.update', $panel)
+        && $post->author_id === $user->getKey();
+}
+```
+
+对应的 `viewAny`、`view`、`create`、`delete` 等方法也由业务 Policy 定义，遵循 Laravel
+自动发现规则或通过 `Gate::policy()` 注册。不要将原始的 `update` 等通用 Policy ability
+作为全局 Spatie 权限授予，以免 Gate 的权限检查提前放行业务 Policy。
+列表数据范围仍需在 Resource 查询中设置；操作权限不会自动过滤数据。
+
+普通 Page 可以声明权限，菜单与路由使用相同检查：
+
+```php
+$panel->page(
+    'reports',
+    'reports',
+    ReportController::class,
+    navigation: ['label' => '报表', 'icon' => 'bar-chart-line'],
+    permission: 'reports.view',
+);
+```
+
+### 接入宿主用户管理
+
+包不创建用户管理页面。宿主用户 Resource 继承 `AdminPanelUserResource`，
+并在表单中指定角色字段的位置即可：
+
+```php
+use Parse\AdminPanel\Resources\AdminPanelUserResource;
+
+final class UserResource extends AdminPanelUserResource
+{
+    public static function fields(): array
+    {
+        return [
+            // 原有姓名、邮箱、密码等业务字段……
+            ...static::roleFields(),
+        ];
+    }
+}
+```
+
+基类自动处理 `role_ids` 校验、已有角色回填、新建和更新时的角色关联同步，
+复用现有 `AssignUserRoles`，不将角色数组写入用户表。角色字段只在 Panel 开启权限控制、
+且操作者具有 `users.assignRoles` 时显示；无权限时禁止提交该字段。
+角色选项及关联操作均限制在当前 Panel guard，其他 guard 的角色保留。
+未提交 `role_ids` 表示保持不变，提交空数组表示清空当前 guard 的角色。
+
+用户模型需与当前 Panel 配置的用户模型匹配，并按前文配置 Spatie `HasRoles` 和支持的 guard。
+业务仍需定义用户 CRUD 的 Policy 和数据范围；用户编辑权限不等于角色分配权限。
+密码处理、字段布局及业务校验继续由宿主负责。
+
+覆盖 `rules()`、`record()`、`createRecord()` 或 `updateRecord()` 时，必须调用对应
+`parent::...()` 才能保留角色集成。业务字段转换优先使用已有的 `prepareForCreate()`、
+`prepareForUpdate()` 或 `prepareForPersistence()` 扩展点。
+内置 CRUD 在事务中执行用户保存和角色分配；自定义保存流程需自行提供相同的事务边界。
+普通 `AdminPanelResource` 的行为保持不变。
+
+自定义用户管理表单仍可直接调用 `AssignUserRoles`：
+
+```php
+use Parse\AdminPanel\Authorization\Actions\AssignUserRoles;
+use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
+
+$panel = app(PanelManager::class)->current(request());
+$actor = request()->user($panel->guard);
+$roles = app(AssignUserRoles::class);
+
+$field = $roles->field($panel, $actor);
+$selected = $roles->selected($panel, $actor, $user);
+$roles->handle($panel, $actor, $user, $validated['role_ids']);
+```
+
+这些底层入口同样检查角色分配权限和 guard，宿主需先对目标用户授权，并将用户信息保存
+与角色分配置于同一事务。
+
+### 更新
+
+Spatie 配置与迁移由宿主维护；本包不会重复发布权限建表迁移，也不会自动覆盖
+`permission.php`。管理界面保留在包内，宿主通过模型配置和 Laravel Policy 扩展，
+更新时无需复制角色管理源码。
+
+### 生成 Resource 权限与 Policy
+
+先在 `routes/admin-panel.php` 注册 Resource，再运行：
+
+```bash
+php artisan admin-panel:generate --panel=admin_panel
+php artisan admin-panel:generate --panel=admin_panel --resource=PostResource
+php artisan admin-panel:generate --panel=admin_panel --resource='App\Admin\Resources\PostResource'
+php artisan admin-panel:generate --panel=admin_panel --only=permissions
+php artisan admin-panel:generate --panel=admin_panel --only=policies
+php artisan admin-panel:generate --panel=admin_panel --dry-run
+```
+
+`--resource` 支持逗号分隔多个资源；短类名有歧义时需使用完整类名。
+默认读取指定 Panel 已注册的 CRUD Resource 和通过 `$panel->widget()` 注册的嵌入式 Widget，
+不扫描未注册目录，也不生成普通 Page 或自定义路由的权限。
+`--resource` 同样支持 Widget 的类名；同一个类同时注册为 Resource 和 Widget 时，
+会合并两种入口的操作，并且可以直接通过类名选择。
+内置角色管理使用安装时初始化的六项权限，不另行生成 RolePolicy。
+
+默认权限前缀取 Model 名称的复数 snake_case，例如 `Post` 对应 `posts`，
+`BlogCategory` 对应 `blog_categories`。需要稳定命名时在 Resource 显式声明：
+
+```php
+public static function permissionPrefix(): string
+{
+    return 'posts';
+}
+```
+
+权限名称为 `posts.viewAny`、`posts.view`、`posts.create`、`posts.update`、`posts.delete`，
+按当前 Panel 的 guard 使用 Spatie 模型配置和 `findOrCreate()` 入库。
+`only` / `except` 路由配置及 `canCreate()`、`canUpdate()`、`canDelete()` 决定本次生成哪些权限。
+创建或更新任一对应路由存在时生成相应权限；开放批量路由且允许删除时也生成 `delete` 权限，
+批量操作继续逐条执行授权。同一 Model 的多个 Resource 合并权限。
+
+默认不把业务权限分配给角色。如需追加给当前 guard 的已有角色，显式指定：
+
+```bash
+php artisan admin-panel:generate --panel=admin_panel --assign-role=admin
+```
+
+该操作保留角色原有权限；角色不存在或属于其他 guard 时拒绝执行。
+`--dry-run` 只展示计划，不写入文件、创建权限或修改角色关联；未指定角色时可在迁移前预览。
+
+Policy 使用宿主应用命名空间和 `app/Policies` 目录，保留 `Models` 下的嵌套结构：
+
+```text
+App\Models\Post       → App\Policies\PostPolicy
+App\Models\Blog\Post  → App\Policies\Blog\PostPolicy
+```
+
+模板包含 `viewAny`、`view`、`create`、`update`、`delete` 五个方法，便于同一模型跨 Panel 复用；
+即使某个 Panel 未生成对应操作权限，也不会因此被放行。方法通过已有 `PanelPermissions`
+使用当前请求中已解析 Panel 的 guard 检查权限，在没有 Panel 上下文或关闭授权时返回 false。
+模型的记录归属等业务规则需在生成后补充。队列和其他非 Panel 场景需要业务显式处理授权上下文。
+
+未配置自定义位置时，宿主 `Models` 目录之外的模型仍生成在 `app/Policies` 下对应完整模型命名空间的目录中。
+模块化项目可以在宿主 `config/admin-panel.php` 的顶层配置 Policy 位置映射：
+
+```php
+'authorization' => [
+    'policy_locations' => [
+        'App\\Modules\\*\\Domain\\Models' => [
+            'namespace' => 'App\\Modules\\*\\Infrastructure\\Policies',
+            'path' => 'app/Modules/*/Infrastructure/Policies',
+        ],
+    ],
+],
+```
+
+例如，`App\Modules\Customer\Domain\Models\Customer` 生成到
+`app/Modules/Customer/Infrastructure/Policies/CustomerPolicy.php`，类名为
+`App\Modules\Customer\Infrastructure\Policies\CustomerPolicy`。
+模型命名空间中 `Models` 后的嵌套结构也会保留。
+
+映射按声明顺序匹配第一条规则，特殊模块的规则应放在通用规则之前。
+模型命名空间前缀最多包含一个独立的 `*` 段，代表一个模块名；
+Policy 命名空间和目录中的 `*` 替换为该模块名，`path` 相对于宿主项目根目录。
+此配置对所有 Panel 共用，同一模型不会因为 guard 不同生成多份 Policy。
+
+对于自定义位置，生成命令会输出具体的 `Gate::policy()` 注册提示，
+需将其加入宿主对应模块的 ServiceProvider。例如：
+
+```php
+Gate::policy(
+    \App\Modules\Customer\Domain\Models\Customer::class,
+    \App\Modules\Customer\Infrastructure\Policies\CustomerPolicy::class,
+);
+```
+
+已注册的 Policy 优先保留，修改映射不会自动移动或覆盖它。
+未显式注册的已有文件也不会被覆盖；映射产生同名类或相同输出文件时，会在写入前报告冲突。
+如果宿主自定义了 Laravel 的 Policy 发现规则，也应确认注册方式。
+
+已存在或已注册的 Policy 始终保留，不自动覆盖或合并业务代码。
+Resource 覆盖了 `authorize()` 时会提示检查其是否调用 Policy。
+同一 Model 使用不同权限前缀，或同一 guard 中不同 Model 共用权限前缀时，
+命令会在写入前报告冲突。生成后修改了前缀、增加了操作或调整了已有 Policy 时，
+需同步检查 Policy 中的权限名称；旧权限不会自动删除。
+
+安装命令只初始化基础角色管理权限，业务 Resource 的生成由此命令单独执行。

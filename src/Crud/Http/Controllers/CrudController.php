@@ -279,17 +279,19 @@ final class CrudController extends Controller
     {
         $name = $resource::routeName();
         $key = $record?->getAttribute($resource::routeKeyName());
+        $user = $resource::user(request());
+        $allows = fn (string $ability): bool => $user !== null && $resource::authorize($ability, $user, $record);
 
         return [
             'index' => Route::has($name) ? route($name) : url('/'),
-            'create' => $resource::canCreate() && Route::has($name.'.create') && Route::has($name.'.store')
+            'create' => $allows('create') && $resource::canCreate() && Route::has($name.'.create') && Route::has($name.'.store')
                 ? route($name.'.create')
                 : null,
-            'show' => $key && Route::has($name.'.show') ? route($name.'.show', $key) : null,
-            'edit' => $key && $resource::canUpdate() && Route::has($name.'.edit') && Route::has($name.'.update')
+            'show' => $key && $allows('view') && Route::has($name.'.show') ? route($name.'.show', $key) : null,
+            'edit' => $key && $allows('update') && $resource::canUpdate() && Route::has($name.'.edit') && Route::has($name.'.update')
                 ? route($name.'.edit', $key)
                 : null,
-            'destroy' => $key && $resource::canDelete() && Route::has($name.'.destroy')
+            'destroy' => $key && $allows('delete') && $resource::canDelete() && Route::has($name.'.destroy')
                 ? route($name.'.destroy', $key)
                 : null,
             'bulk' => Route::has($name.'.bulk') ? route($name.'.bulk') : null,
@@ -323,7 +325,7 @@ final class CrudController extends Controller
 
         return [
             ...$resource::definition(),
-            'canCreate' => $resource::canCreate()
+            'canCreate' => $resource::authorize('create', $user) && $resource::canCreate()
                 && Route::has($name.'.create')
                 && Route::has($name.'.store'),
             'canUpdate' => $resource::canUpdate()

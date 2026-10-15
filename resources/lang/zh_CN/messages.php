@@ -1,6 +1,18 @@
 <?php
 
 return [
+    'authorization' => [
+        'group' => '权限管理',
+        'roles' => '角色管理',
+        'role' => '角色',
+        'name' => '名称',
+        'permissions' => '权限配置',
+        'permission_count' => '权限数量',
+        'other' => '其他',
+        'select_all' => '全选',
+        'empty_permissions' => '暂无可选项。',
+        'role_in_use' => '该角色已分配给用户，请先解除关联再删除。',
+    ],
     'two_factor' => [
         'copy_codes' => '复制全部',
         'copied' => '已复制',

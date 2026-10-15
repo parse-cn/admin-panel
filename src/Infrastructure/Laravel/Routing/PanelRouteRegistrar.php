@@ -3,6 +3,8 @@
 namespace Parse\AdminPanel\Infrastructure\Laravel\Routing;
 
 use Illuminate\Support\Facades\Route;
+use Parse\AdminPanel\Authorization\Http\AuthorizePanelPermission;
+use Parse\AdminPanel\Authorization\Resources\RoleResource;
 use Parse\AdminPanel\Crud\Definition\CrudResourceRegistry;
 use Parse\AdminPanel\Crud\Http\Controllers\CrudWidgetController;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\Routing\CrudRouteRegistrar;
@@ -97,8 +99,20 @@ final class PanelRouteRegistrar
                             Route::post('bulk-actions', 'bulk')->name('crud.widget.bulk');
                         });
 
+                    if ($panel->authorizationEnabled) {
+                        $this->crudRoutes->register([[
+                            'uri' => 'roles',
+                            'resource' => RoleResource::class,
+                            'name' => 'roles',
+                            'actions' => ['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'],
+                        ]]);
+                    }
+
                     foreach ($panel->pages() as $page) {
-                        Route::get($page->uri, $page->action)->name($page->name);
+                        $route = Route::get($page->uri, $page->action)->name($page->name);
+                        if ($page->permission !== null) {
+                            $route->middleware(AuthorizePanelPermission::class.':'.$page->permission);
+                        }
                     }
 
                     $registeredCrudCount = count($this->crudResources->registrations());

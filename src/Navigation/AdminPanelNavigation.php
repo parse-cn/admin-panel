@@ -3,6 +3,7 @@
 namespace Parse\AdminPanel\Navigation;
 
 use Illuminate\Http\Request;
+use Parse\AdminPanel\Authorization\PanelPermissions;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Pages\RegisteredPage;
 use Parse\AdminPanel\Resources\RegisteredResource;
@@ -75,7 +76,8 @@ final class AdminPanelNavigation
             ->filter();
         $pageItems = collect($panel->pages())
             ->map(function (RegisteredPage $page) use ($panel, $request): ?array {
-                if ($page->navigation === null) {
+                if ($page->navigation === null || ($page->permission !== null
+                    && ! PanelPermissions::allows($request->user($panel->guard), $page->permission, $panel))) {
                     return null;
                 }
 
@@ -101,6 +103,22 @@ final class AdminPanelNavigation
                 ];
             })
             ->filter();
+        if ($panel->authorizationEnabled && PanelPermissions::allows($request->user($panel->guard), 'roles.viewAny', $panel)) {
+            $pageItems->push([
+                'group' => __('admin-panel::messages.authorization.group'),
+                'groupSort' => 90,
+                'section' => __('admin-panel::messages.navigation.workspace'),
+                'sectionSort' => 0,
+                'sort' => 0,
+                'item' => [
+                    'label' => __('admin-panel::messages.authorization.roles'),
+                    'href' => route($panel->route('roles')),
+                    'icon' => 'shield-user-line',
+                    'badge' => null,
+                    'active' => $request->routeIs($panel->route('roles').'*'),
+                ],
+            ]);
+        }
         $dashboardNavigation = $panel->dashboardNavigation ?? [
             'label' => 'admin-panel::messages.dashboard.title',
             'icon' => 'dashboard-line',

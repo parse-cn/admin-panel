@@ -1,7 +1,7 @@
 {
 	"name": "parse/admin-panel",
 	"private": true,
-	"description": "Frontend runtime dependencies imported by this plugin's JS source. Host applications must install these alongside the composer package; @admin-panel/* import paths are resolved by the host's Vite aliases. Transitive-only packages are listed because the injected Vite config uses preserveSymlinks:true, which requires every resolvable package to be a direct host dependency.",
+	"description": "Frontend runtime dependencies imported by this plugin's JS source. Host applications must install these alongside the composer package; @admin-panel/* import paths are resolved by the host's Vite aliases. Vite uses preserveSymlinks:false. Runtime dependencies are declared explicitly for host integration.",
 	"dependencies": {
 		"@base-ui/react": "^1.6.0",
 		"@base-ui/utils": "^0.4.0",

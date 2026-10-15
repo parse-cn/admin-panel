@@ -6,7 +6,9 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\Resources\EloquentCrudResource;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
 use Parse\AdminPanel\Resources\Details\Detail;
@@ -16,6 +18,26 @@ abstract class AdminPanelResource extends EloquentCrudResource
     protected static bool $isGloballySearchable = true;
 
     protected static int $globalSearchSort = 0;
+
+    public static function authorize(string $ability, Authenticatable $user, ?Model $record = null): bool
+    {
+        $panel = request()->attributes->get('admin_panel');
+
+        if (! $panel instanceof PanelRuntime || ! $panel->authorizationEnabled) {
+            return parent::authorize($ability, $user, $record);
+        }
+
+        return Gate::forUser($user)->allows(
+            $ability, $record ?? static::model(),
+        );
+    }
+
+    public static function permissionPrefix(): string
+    {
+        return Str::snake(
+            Str::pluralStudly(class_basename(static::model())),
+        );
+    }
 
     public static function detail(): Detail
     {

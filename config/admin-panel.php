@@ -10,6 +10,9 @@ return [
         'entry' => 'resources/js/admin-panel.tsx',
     ],
     'app_shell' => 'default',
+    'authorization' => [
+        'policy_locations' => [],
+    ],
     'localization' => [
         'default' => env('ADMIN_PANEL_LOCALE', config('app.locale', 'en')),
         'fallback' => env('ADMIN_PANEL_FALLBACK_LOCALE', config('app.fallback_locale', 'en')),
@@ -31,6 +34,7 @@ return [
                 'per_page' => 10,
                 'per_page_options' => [5, 10, 15, 25, 50],
             ],
+            'authorization' => ['enabled' => true],
             'auth' => [
                 'guard' => 'admin_panel',
                 'provider' => 'users',

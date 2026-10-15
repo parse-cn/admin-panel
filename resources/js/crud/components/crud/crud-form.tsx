@@ -40,6 +40,8 @@ export type CrudFormProps = {
 function initialValue(field: CrudField, value: unknown): string | string[] {
   if (field.type === 'boolean')
     return value === true || value === 1 || value === '1' ? '1' : '0';
+  if (field.type === 'checkbox-list')
+    return Array.isArray(value) ? value.map(String) : [];
   if (field.type === 'ip-list')
     return Array.isArray(value)
       ? value.map(String)

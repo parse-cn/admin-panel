@@ -239,9 +239,17 @@ final class CrudWidgetController extends Controller
     ): array {
         abort_unless($user !== null, 403);
 
+        $routes = $this->routes($identifier, $record);
+        if (! $resource::authorize('update', $user, $record)) {
+            $routes['edit'] = null;
+        }
+        if (! $resource::authorize('delete', $user, $record)) {
+            $routes['destroy'] = null;
+        }
+
         return [
             ...($forDetail ? $resource::record($record) : $resource::recordForIndex($record)),
-            'routes' => $this->routes($identifier, $record),
+            'routes' => $routes,
             'actions' => $resource::recordActions($record, $user),
         ];
     }
