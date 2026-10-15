@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
+use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
+use Throwable;
 
 final class SyncPermissionsCommand extends Command
 {
@@ -47,28 +49,51 @@ final class SyncPermissionsCommand extends Command
 
             return self::INVALID;
         }
-        foreach (array_diff($names, $existing) as $name) {
-            $this->line('Missing: '.$name);
-        }
         foreach (array_diff($existing, $names) as $name) {
             $this->warn('Existing permission absent from this panel manifest (preserved): '.$name);
         }
         if ($this->option('dry-run')) {
+            foreach ($names as $name) {
+                $this->line((in_array($name, $existing, true) ? '[Exists] ' : '[Will create] ').$name);
+            }
             $this->info('Preview complete; no database records were changed.');
 
             return self::SUCCESS;
         }
-        $permission->getConnection()->transaction(function () use ($permissionModel, $names, $panel, $role): void {
-            $permissions = [];
-            foreach ($names as $name) {
-                $permissions[] = $permissionModel::findOrCreate($name, $panel->guard);
-            }
-            if ($permissions !== []) {
-                $role?->givePermissionTo($permissions);
-            }
-        });
+        // findOrCreate() reads Spatie's cache, which may outlive a database restore or reset.
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->info(count($names).' permissions synchronized for guard ['.$panel->guard.']. Existing IDs and role assignments were preserved.');
+        try {
+            $statuses = $permission->getConnection()->transaction(function () use ($permissionModel, $names, $panel, $role): array {
+                $permissions = [];
+                $statuses = [];
+                foreach ($names as $name) {
+                    $record = $permissionModel::findOrCreate($name, $panel->guard);
+                    if (! $permissionModel::query()->whereKey($record->getKey())
+                        ->where('name', $name)->where('guard_name', $panel->guard)->exists()) {
+                        throw new RuntimeException('Permission was not persisted: '.$name);
+                    }
+                    $statuses[$name] = $record->wasRecentlyCreated ? 'Created' : 'Exists';
+                    $permissions[] = $record;
+                }
+                if ($permissions !== []) {
+                    $role?->givePermissionTo($permissions);
+                }
+
+                return $statuses;
+            });
+        } catch (Throwable $exception) {
+            $this->error('[Failed] '.$exception->getMessage());
+            $this->error('Synchronization rolled back; no changes from this run were committed.');
+
+            return self::FAILURE;
+        } finally {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        }
+        foreach ($statuses as $name => $status) {
+            $this->line('['.$status.'] '.$name);
+        }
+        $created = count(array_filter($statuses, fn (string $status): bool => $status === 'Created'));
+        $this->info('Guard ['.$panel->guard.']: '.$created.' created, '.(count($statuses) - $created).' already exist, 0 failed.');
 
         return self::SUCCESS;
     }
