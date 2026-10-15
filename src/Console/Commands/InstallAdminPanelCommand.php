@@ -38,12 +38,9 @@ final class InstallAdminPanelCommand extends Command
         }
 
         $successful = $result->warnings === [];
-        $migrationsReady = true;
-        foreach (['permission-config', 'permission-migrations'] as $tag) {
-            if (! $this->publish($tag)) {
-                $successful = false;
-                $migrationsReady = false;
-            }
+        $migrationsReady = $this->publish('permission-migrations');
+        if (! $migrationsReady) {
+            $successful = false;
         }
 
         if ($migrationsReady && $this->commandExists('migrate')) {

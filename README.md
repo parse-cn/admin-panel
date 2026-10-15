@@ -47,7 +47,7 @@ pnpm build
 安装命令会：
 
 - 发布 `config/admin-panel.php`
-- 发布本包迁移和 Spatie 权限配置、迁移，然后执行 `migrate`（包含宿主项目全部待执行迁移）
+- 发布本包迁移和 Spatie 权限迁移，然后执行 `migrate`（包含宿主项目全部待执行迁移）
 - 迁移成功后，按已启用权限的 Panel guard 初始化默认 `admin` 角色及角色管理权限
 - 创建 `routes/admin-panel.php`
 - 补充前端依赖
@@ -63,7 +63,8 @@ pnpm build
 `@base-ui/utils`、`@tanstack/table-core`）声明为项目直接依赖。Vite 使用
 `preserveSymlinks: false`，重复安装时也会将已有的 `true` 配置更新为 `false`。
 
-安装命令默认发布本包迁移，以及 Spatie 的配置和迁移，保留已有文件。
+安装命令默认发布本包迁移和 Spatie 权限迁移，保留已有文件。
+Spatie 使用包内默认配置，不会默认生成 `config/permission.php`。
 发布完成后自动执行 `migrate`，包含宿主项目全部待执行迁移。生产环境保留 Laravel 的确认提示；
 非交互部署可使用 `php artisan admin-panel:install --force`，该选项仅用于迁移确认，不会强制覆盖发布文件。
 安装会创建默认角色及权限，但不会修改用户模型或将角色分配给具体用户；按输出提示完成用户模型配置和管理员分配。
@@ -1095,11 +1096,17 @@ React 使用 `qrcode.react` 本地渲染二维码，PHP 使用 `pragmarx/google2
 
 ### 安装与启用
 
-在宿主 Laravel 项目运行 `php artisan admin-panel:install` 会发布配置、迁移并执行数据库迁移；也可以单独发布 Spatie 文件，再执行迁移：
+在宿主 Laravel 项目运行 `php artisan admin-panel:install` 会发布 Admin Panel 配置、本包迁移和 Spatie 权限迁移，并执行数据库迁移；也可以单独发布 Spatie 权限迁移，再执行迁移：
 
 ```bash
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider" --tag="permission-migrations"
 php artisan migrate
+```
+
+需要自定义 Spatie 模型、表名或缓存配置时，再按需发布配置：
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider" --tag="permission-config"
 ```
 
 用户模型使用 Spatie trait，并明确支持哪些 guard：
