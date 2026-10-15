@@ -34,7 +34,12 @@ return [
                 'per_page' => 10,
                 'per_page_options' => [5, 10, 15, 25, 50],
             ],
-            'authorization' => ['enabled' => true],
+            'authorization' => [
+                'enabled' => true,
+                // Project-relative path; null uses config/admin-panel-permissions.php. Use separate paths for multiple panels.
+                'permissions_file' => null,
+                'permissions' => [],
+            ],
             'auth' => [
                 'guard' => 'admin_panel',
                 'provider' => 'users',

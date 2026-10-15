@@ -21,6 +21,7 @@ final readonly class PanelRuntime
     private Collection $widgets;
 
     /**
+     * @param  list<string>  $permissions
      * @param  list<string>  $middleware
      * @param  list<int>  $perPageOptions
      * @param  class-string<Model>  $userModel
@@ -61,6 +62,8 @@ final readonly class PanelRuntime
         public bool $twoFactorEnabled = false,
         public bool $twoFactorRequired = false,
         public bool $authorizationEnabled = true,
+        public ?string $permissionsFile = null,
+        public array $permissions = [],
     ) {
         $this->widgets = new Collection;
     }

@@ -3,8 +3,9 @@
 namespace Parse\AdminPanel;
 
 use Illuminate\Support\ServiceProvider;
-use Parse\AdminPanel\Authorization\Console\InitializePermissionsCommand;
 use Parse\AdminPanel\Authorization\Console\GenerateAuthorizationCommand;
+use Parse\AdminPanel\Authorization\Console\InitializePermissionsCommand;
+use Parse\AdminPanel\Authorization\Console\SyncPermissionsCommand;
 use Parse\AdminPanel\Console\Commands\InstallAdminPanelCommand;
 use Parse\AdminPanel\Console\Commands\MakeAdminResourceCommand;
 use Parse\AdminPanel\Crud\Contracts\CrudAuthorizer as CrudAuthorizerContract;
@@ -93,6 +94,7 @@ final class AdminPanelServiceProvider extends ServiceProvider
             $this->commands([
                 InitializePermissionsCommand::class,
                 GenerateAuthorizationCommand::class,
+                SyncPermissionsCommand::class,
                 InstallAdminPanelCommand::class,
                 MakeAdminResourceCommand::class,
             ]);

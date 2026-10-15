@@ -1263,6 +1263,55 @@ Spatie 配置与迁移由宿主维护；本包不会重复发布权限建表迁�
 `permission.php`。管理界面保留在包内，宿主通过模型配置和 Laravel Policy 扩展，
 更新时无需复制角色管理源码。
 
+### 权限清单与部署同步
+
+开发环境生成权限清单和 Policy，提交 Git；生产环境只同步已发布清单：
+
+```bash
+# 开发
+php artisan admin-panel:generate --panel=merchant
+# 部署，在数据库迁移后执行
+php artisan admin-panel:permissions-sync --panel=merchant
+```
+
+默认清单为 `config/admin-panel-permissions.php`，直接返回权限 key 列表，使用短数组语法且不包含数字索引或 Panel 分组。
+多个 Panel 必须分别配置不同的 `permissions_file`，否则命令会拒绝执行，避免覆盖。
+模块项目可以在对应 Panel 配置中指定独立清单文件，并声明自定义权限：
+
+```php
+'authorization' => [
+    'enabled' => true,
+    'permissions_file' => 'app/Modules/MerchantAdmin/Infrastructure/config/admin-panel-permissions.php',
+    'permissions' => [
+        'orders.refund',
+    ],
+],
+```
+
+路径相对于宿主项目根目录。独立文件只返回当前 Panel 的权限 key 列表：
+
+```php
+return [
+    'customers.view',
+    'customers.viewAny',
+    'orders.refund',
+    // 以及其他生成的权限
+];
+```
+
+生成器合并 Resource、Widget、自定义权限和内置的六项角色管理权限，去重并稳定排序。
+清单不保存数据库 ID、label 或 group；自定义权限请维护在 Panel 配置中，不手改生成文件。
+完整生成会替换当前 Panel 的独立清单；
+`--resource` 局部生成只合并新增权限，移除旧权限需要执行完整生成。
+`--only=policies` 不读取或修改权限清单，`--only=permissions` 只生成清单。
+
+同步命令直接读取清单文件，不扫描资源；按 `name + guard_name` 补齐，保留已有 ID 和角色关联，
+重置权限缓存。清单缺失时拒绝同步，数据库中的多余权限仅报告，不自动删除。
+多个 Panel 共用 guard 时，多余项也可能来自其他 Panel。
+权限改名需显式数据迁移，避免丢失原角色关联。
+清单修改后，使用 Laravel 配置缓存的项目应在部署时重新执行 `config:cache`。
+原生成命令的 `--assign-role` 选项移至 `admin-panel:permissions-sync`。
+
 ### 生成 Resource 权限与 Policy
 
 先在 `routes/admin-panel.php` 注册 Resource，再运行：
@@ -1294,19 +1343,19 @@ public static function permissionPrefix(): string
 ```
 
 权限名称为 `posts.viewAny`、`posts.view`、`posts.create`、`posts.update`、`posts.delete`，
-按当前 Panel 的 guard 使用 Spatie 模型配置和 `findOrCreate()` 入库。
+生成到权限清单，不直接写入数据库；部署时通过同步命令按当前 Panel 的 guard 入库。
 `only` / `except` 路由配置及 `canCreate()`、`canUpdate()`、`canDelete()` 决定本次生成哪些权限。
 创建或更新任一对应路由存在时生成相应权限；开放批量路由且允许删除时也生成 `delete` 权限，
 批量操作继续逐条执行授权。同一 Model 的多个 Resource 合并权限。
 
-默认不把业务权限分配给角色。如需追加给当前 guard 的已有角色，显式指定：
+同步时默认不把权限分配给角色。如需追加给当前 guard 的已有角色，显式指定：
 
 ```bash
-php artisan admin-panel:generate --panel=admin_panel --assign-role=admin
+php artisan admin-panel:permissions-sync --panel=admin_panel --assign-role=admin
 ```
 
 该操作保留角色原有权限；角色不存在或属于其他 guard 时拒绝执行。
-`--dry-run` 只展示计划，不写入文件、创建权限或修改角色关联；未指定角色时可在迁移前预览。
+两个命令均支持 `--dry-run`。生成命令不访问权限数据库，可在迁移前运行；同步命令需要已执行权限迁移。
 
 Policy 使用宿主应用命名空间和 `app/Policies` 目录，保留 `Models` 下的嵌套结构：
 

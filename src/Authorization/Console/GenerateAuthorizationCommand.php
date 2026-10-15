@@ -8,13 +8,13 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Authorization\PolicyLocationResolver;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
 use Parse\AdminPanel\Resources\AdminPanelResource;
 use Parse\AdminPanel\Resources\RegisteredResource;
 use ReflectionMethod;
-use Spatie\Permission\PermissionRegistrar;
 
 final class GenerateAuthorizationCommand extends Command
 {
@@ -22,10 +22,9 @@ final class GenerateAuthorizationCommand extends Command
         {--panel= : Panel ID}
         {--resource= : Registered resource or widget FQCN or short name; comma-separated}
         {--only= : Generate only permissions or policies}
-        {--dry-run : Preview without writing files or database records}
-        {--assign-role= : Append generated permissions to an existing role in the panel guard}';
+        {--dry-run : Preview without writing files or database records}';
 
-    protected $description = 'Generate resource permissions and missing Laravel policies for a panel';
+    protected $description = 'Generate a permission manifest and missing Laravel policies for a panel';
 
     private const array ACTIONS = [
         'viewAny' => ['index'],
@@ -49,29 +48,20 @@ final class GenerateAuthorizationCommand extends Command
 
             return self::INVALID;
         }
-        if ($only === 'policies' && $this->option('assign-role') !== null) {
-            $this->error('--assign-role requires permission generation.');
-
-            return self::INVALID;
-        }
-
         try {
             $panel = $panels->panel($panelId);
             if (! $panel->authorizationEnabled) {
                 throw new InvalidArgumentException('Authorization is disabled for this panel.');
             }
-            $permissionModel = config('permission.models.permission');
-            $permission = new $permissionModel;
-            if (! $permission instanceof Model) {
-                throw new InvalidArgumentException('The configured permission model must extend Eloquent Model.');
-            }
             $registrations = $this->selectResources($panel);
             $plan = $this->plan($panel, $registrations, $panels, $files, $only !== 'permissions');
-            $roleModel = config('permission.models.role');
-            $role = $this->option('assign-role') === null ? null : $roleModel::query()
-                ->where('guard_name', $panel->guard)->where('name', $this->option('assign-role'))->first();
-            if ($this->option('assign-role') !== null && $role === null) {
-                throw new InvalidArgumentException('The requested role does not exist in this panel guard.');
+            $manifest = app(PermissionManifest::class);
+            $names = $only === 'policies' ? [] : $manifest->generatedNames($panel, PermissionManifest::normalize(array_merge(...array_column($plan, 'permissions'))));
+            if ($only !== 'policies') {
+                if ($this->option('resource') !== null) {
+                    $names = PermissionManifest::normalize([...$manifest->read($panel, false), ...$names]);
+                }
+                $manifest->contents($panel, $names);
             }
         } catch (InvalidArgumentException $exception) {
             $this->error($exception->getMessage());
@@ -79,12 +69,10 @@ final class GenerateAuthorizationCommand extends Command
             return self::INVALID;
         }
 
-        $names = [];
         foreach ($plan as $item) {
             $this->line($item['model'].' ['.$panel->guard.']');
             if ($only !== 'policies') {
                 foreach ($item['permissions'] as $name) {
-                    $names[] = $name;
                     $this->line('  Permission: '.$name);
                 }
             }
@@ -95,8 +83,9 @@ final class GenerateAuthorizationCommand extends Command
                 }
             }
         }
-        if ($role !== null) {
-            $this->line('Append permissions to role: '.$role->name.' ['.$panel->guard.']');
+        if ($only !== 'policies') {
+            $this->line('Permission manifest: '.$manifest->path($panel));
+            $this->line('Permissions: '.implode(', ', $names));
         }
         if ($this->option('dry-run')) {
             $this->info('Preview complete; no files or database records were changed.');
@@ -115,17 +104,10 @@ final class GenerateAuthorizationCommand extends Command
                 $createdPolicies++;
             }
         }
-        if ($only !== 'policies' && $names !== []) {
-            $permission->getConnection()->transaction(function () use ($permissionModel, $names, $panel, $role): void {
-                $permissions = [];
-                foreach (array_unique($names) as $name) {
-                    $permissions[] = $permissionModel::findOrCreate($name, $panel->guard);
-                }
-                $role?->givePermissionTo($permissions);
-            });
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        if ($only !== 'policies') {
+            $manifest->write($panel, $names);
         }
-        $this->info(count(array_unique($names)).' permissions synchronized; '.$createdPolicies.' policies created. Existing policies were preserved.');
+        $this->info(count($names).' permissions declared; '.$createdPolicies.' policies created. Database permissions were not changed.');
 
         return self::SUCCESS;
     }

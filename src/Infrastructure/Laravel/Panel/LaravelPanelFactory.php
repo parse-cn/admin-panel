@@ -2,8 +2,10 @@
 
 namespace Parse\AdminPanel\Infrastructure\Laravel\Panel;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Crud\Definition\CrudResourceRegistry;
 use Parse\AdminPanel\Domain\Panel\PanelDefinition;
 use Parse\AdminPanel\Domain\Panel\PanelRegistry;
@@ -84,7 +86,7 @@ final class LaravelPanelFactory
         if ($twoFactorRequired && ! $twoFactorEnabled) {
             throw new InvalidArgumentException('Required two-factor authentication requires [auth.two_factor.enabled] to be true.');
         }
-        if ($twoFactorEnabled && ! is_subclass_of($userModel, \Illuminate\Contracts\Auth\Authenticatable::class)) {
+        if ($twoFactorEnabled && ! is_subclass_of($userModel, Authenticatable::class)) {
             throw new InvalidArgumentException('Two-factor authentication requires an Authenticatable user model.');
         }
         if ($twoFactorEnabled && ! $profile['enabled']) {
@@ -129,6 +131,8 @@ final class LaravelPanelFactory
             twoFactorEnabled: $twoFactorEnabled,
             twoFactorRequired: $twoFactorRequired,
             authorizationEnabled: $authorizationEnabled,
+            permissionsFile: $this->nullableString($configuration, 'authorization.permissions_file'),
+            permissions: PermissionManifest::normalize(data_get($configuration, 'authorization.permissions', [])),
         );
         $panel->imageUpload(
             purpose: 'image',
