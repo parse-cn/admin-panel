@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'errors' => [
+        '403' => ['title' => 'Access denied', 'description' => 'You do not have permission to access this page. Contact your administrator if you need access.'],
+        '404' => ['title' => 'Page not found', 'description' => 'The page you are looking for does not exist or has been moved.'],
+        '500' => ['title' => 'Something went wrong', 'description' => 'We could not load this page. Please try again later.'],
+        'home' => 'Back to home',
+        'retry' => 'Try again',
+    ],
     'authorization' => [
         'actions' => [
             'viewAny' => 'View list',

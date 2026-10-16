@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'errors' => [
+        '403' => ['title' => '无权访问', 'description' => '你没有访问此页面的权限，如需访问，请联系管理员。'],
+        '404' => ['title' => '页面不存在', 'description' => '你访问的页面不存在或已被移除。'],
+        '500' => ['title' => '服务暂时不可用', 'description' => '页面加载失败，请稍后重试。'],
+        'home' => '返回首页',
+        'retry' => '重试',
+    ],
     'authorization' => [
         'actions' => [
             'viewAny' => '查看列表',

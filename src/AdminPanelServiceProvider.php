@@ -2,6 +2,7 @@
 
 namespace Parse\AdminPanel;
 
+use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
 use Parse\AdminPanel\Authorization\Console\GenerateAuthorizationCommand;
 use Parse\AdminPanel\Authorization\Console\InitializePermissionsCommand;
@@ -23,6 +24,7 @@ use Parse\AdminPanel\Crud\Infrastructure\Laravel\LaravelCrudValidator;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\LaravelTransactionManager;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\Routing\CrudRouteRegistrar;
 use Parse\AdminPanel\Domain\Panel\PanelRegistry;
+use Parse\AdminPanel\Http\Responses\RenderPanelError;
 use Parse\AdminPanel\Infrastructure\Laravel\Config\LaravelPanelConfigurationLoader;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntimeRegistry;
@@ -59,6 +61,10 @@ final class AdminPanelServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->callAfterResolving(Handler::class, function (Handler $handler): void {
+            $handler->renderable($this->app->make(RenderPanelError::class));
+        });
+
         $configurationLoader = $this->app->make(LaravelPanelConfigurationLoader::class);
 
         foreach ($configurationLoader->panels() as $id => $configuration) {

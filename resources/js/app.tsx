@@ -32,7 +32,7 @@ function componentName(path: string): string {
 
 createInertiaApp({
   layout: (name) =>
-    name === 'login' || name === 'two-factor-challenge' || name.endsWith('/login')
+    name === 'error' || name === 'login' || name === 'two-factor-challenge' || name.endsWith('/login')
       ? null
       : AdminPanelPersistentLayout,
   resolve: (name) => {
