@@ -4,6 +4,8 @@ namespace Parse\AdminPanel\Installation;
 
 use Illuminate\Filesystem\Filesystem;
 use JsonException;
+use ReflectionClass;
+use Spatie\Permission\PermissionRegistrar;
 
 final readonly class AdminPanelInstaller
 {
@@ -33,6 +35,7 @@ final readonly class AdminPanelInstaller
             $unchanged,
             $warnings,
         );
+        $this->installPermissionConfiguration($applicationPath, $completed, $unchanged, $warnings);
         $this->installMigrations($applicationPath, $completed, $unchanged);
         $this->installAdminRoutes(
             $applicationPath,
@@ -66,6 +69,37 @@ final readonly class AdminPanelInstaller
         );
 
         return new AdminPanelInstallResult($completed, $unchanged, $warnings);
+    }
+
+    /**
+     * @param  list<string>  $completed
+     * @param  list<string>  $unchanged
+     * @param  list<string>  $warnings
+     */
+    private function installPermissionConfiguration(
+        string $applicationPath,
+        array &$completed,
+        array &$unchanged,
+        array &$warnings,
+    ): void {
+        $destination = $applicationPath.'/config/permission.php';
+        $exists = $this->files->exists($destination);
+        $source = dirname((new ReflectionClass(PermissionRegistrar::class))->getFileName(), 2).'/config/permission.php';
+        $contents = $this->files->get($exists ? $destination : $source);
+        $updated = preg_replace('/([\'"]teams[\'"]\s*=>\s*)(?:true|false)\b/', '${1}true', $contents, 1, $count);
+        if ($updated === null || $count !== 1) {
+            $warnings[] = 'Set permission.teams to true in config/permission.php before running migrations; its current expression could not be updated automatically.';
+
+            return;
+        }
+        if ($exists && $updated === $contents) {
+            $unchanged[] = 'Spatie Teams configuration is already enabled';
+
+            return;
+        }
+        $this->files->ensureDirectoryExists(dirname($destination));
+        $this->files->put($destination, $updated);
+        $completed[] = 'Configured config/permission.php with Spatie Teams enabled';
     }
 
     /**
@@ -297,7 +331,6 @@ final readonly class AdminPanelInstaller
     }
 
     /**
-     * @param  mixed  $values
      * @return array<string, string>
      */
     private function stringMap(mixed $values): array

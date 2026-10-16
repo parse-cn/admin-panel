@@ -2,11 +2,15 @@
 
 namespace Parse\AdminPanel;
 
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Foundation\Exceptions\Handler;
+use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\ServiceProvider;
 use Parse\AdminPanel\Authorization\Console\GenerateAuthorizationCommand;
-use Parse\AdminPanel\Authorization\Console\InitializePermissionsCommand;
+use Parse\AdminPanel\Authorization\Console\SuperAdminCommand;
 use Parse\AdminPanel\Authorization\Console\SyncPermissionsCommand;
+use Parse\AdminPanel\Authorization\PanelSuperAdmin;
 use Parse\AdminPanel\Console\Commands\InstallAdminPanelCommand;
 use Parse\AdminPanel\Console\Commands\MakeAdminResourceCommand;
 use Parse\AdminPanel\Crud\Contracts\CrudAuthorizer as CrudAuthorizerContract;
@@ -24,6 +28,7 @@ use Parse\AdminPanel\Crud\Infrastructure\Laravel\LaravelCrudValidator;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\LaravelTransactionManager;
 use Parse\AdminPanel\Crud\Infrastructure\Laravel\Routing\CrudRouteRegistrar;
 use Parse\AdminPanel\Domain\Panel\PanelRegistry;
+use Parse\AdminPanel\Http\Middleware\SetPanelPermissionTeam;
 use Parse\AdminPanel\Http\Responses\RenderPanelError;
 use Parse\AdminPanel\Infrastructure\Laravel\Config\LaravelPanelConfigurationLoader;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
@@ -34,6 +39,11 @@ final class AdminPanelServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Register before Spatie's Gate callback consumes the guard argument.
+        $this->callAfterResolving(GateContract::class, function (GateContract $gate): void {
+            $gate->before($this->app->make(PanelSuperAdmin::class)->before(...));
+        });
+
         $this->app->singleton(PanelManager::class);
         $this->app->singleton(CrudResourceRegistry::class);
         $this->app->singleton(CrudRouteRegistrar::class);
@@ -61,6 +71,10 @@ final class AdminPanelServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->callAfterResolving(Kernel::class, function (Kernel $kernel): void {
+            $kernel->addToMiddlewarePriorityBefore(SubstituteBindings::class, SetPanelPermissionTeam::class);
+        });
+
         $this->callAfterResolving(Handler::class, function (Handler $handler): void {
             $handler->renderable($this->app->make(RenderPanelError::class));
         });
@@ -98,9 +112,9 @@ final class AdminPanelServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                InitializePermissionsCommand::class,
                 GenerateAuthorizationCommand::class,
                 SyncPermissionsCommand::class,
+                SuperAdminCommand::class,
                 InstallAdminPanelCommand::class,
                 MakeAdminResourceCommand::class,
             ]);

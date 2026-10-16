@@ -21,6 +21,7 @@ use Parse\AdminPanel\Http\Middleware\HandleAdminPanelInertiaRequests;
 use Parse\AdminPanel\Http\Middleware\RedirectIfAdminPanelAuthenticated;
 use Parse\AdminPanel\Http\Middleware\ResolveAdminPanel;
 use Parse\AdminPanel\Http\Middleware\SetAdminPanelLocale;
+use Parse\AdminPanel\Http\Middleware\SetPanelPermissionTeam;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 
 final class PanelRouteRegistrar
@@ -38,6 +39,7 @@ final class PanelRouteRegistrar
                 'middleware' => [
                     ...$panel->middleware,
                     ResolveAdminPanel::class.':'.$panel->id,
+                    SetPanelPermissionTeam::class,
                     SetAdminPanelLocale::class,
                     HandleAdminPanelInertiaRequests::class.':'.$panel->id,
                 ],

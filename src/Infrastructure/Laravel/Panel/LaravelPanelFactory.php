@@ -5,6 +5,7 @@ namespace Parse\AdminPanel\Infrastructure\Laravel\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Parse\AdminPanel\Authorization\Contracts\ResolvesPermissionTeam;
 use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Crud\Definition\CrudResourceRegistry;
 use Parse\AdminPanel\Domain\Panel\PanelDefinition;
@@ -97,8 +98,21 @@ final class LaravelPanelFactory
         if (! is_bool($authorizationEnabled)) {
             throw new InvalidArgumentException('Admin panel configuration [authorization.enabled] must be boolean.');
         }
-        if ($authorizationEnabled && config('permission.teams', false)) {
-            throw new InvalidArgumentException('Admin panel role management does not support Spatie teams.');
+        $superAdminRole = data_get($configuration, 'authorization.super_admin_role');
+        if ($superAdminRole !== null && (! is_string($superAdminRole) || trim($superAdminRole) === ''
+            || trim($superAdminRole) !== $superAdminRole || mb_strlen($superAdminRole) > 255)) {
+            throw new InvalidArgumentException('Panel authorization.super_admin_role must be a non-empty role name of at most 255 characters.');
+        }
+        $teamId = data_get($configuration, 'authorization.team_id');
+        $teamResolver = $this->nullableString($configuration, 'authorization.team_resolver');
+        if ($teamId !== null && ((! is_int($teamId) && ! is_string($teamId)) || $teamId === '')) {
+            throw new InvalidArgumentException('Panel authorization.team_id must be a non-empty string or integer.');
+        }
+        if ($teamResolver !== null && ! is_subclass_of($teamResolver, ResolvesPermissionTeam::class)) {
+            throw new InvalidArgumentException('Panel authorization.team_resolver must implement '.ResolvesPermissionTeam::class.'.');
+        }
+        if ($authorizationEnabled && config('permission.teams', false) && $teamId === null && $teamResolver === null) {
+            throw new InvalidArgumentException('Panels using Spatie teams must configure authorization.team_id or authorization.team_resolver.');
         }
 
         $panel = new PanelRuntime(
@@ -134,6 +148,9 @@ final class LaravelPanelFactory
             permissionsFile: $this->nullableString($configuration, 'authorization.permissions_file'),
             permissions: PermissionManifest::normalize(data_get($configuration, 'authorization.permissions', [])),
             rolesNavigation: $this->rolesNavigation($configuration),
+            permissionTeamId: $teamId,
+            permissionTeamResolver: $teamResolver,
+            superAdminRole: $superAdminRole,
         );
         $panel->imageUpload(
             purpose: 'image',

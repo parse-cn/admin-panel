@@ -42,6 +42,10 @@ return [
             ],
             'authorization' => [
                 'enabled' => true,
+                // Default platform team; set this to null when using a team resolver.
+                'team_id' => 0,
+                'team_resolver' => null,
+                'super_admin_role' => 'super-admin',
                 // Project-relative path; null uses config/admin-panel-permissions.php. Use separate paths for multiple panels.
                 'permissions_file' => null,
                 'permissions' => [],

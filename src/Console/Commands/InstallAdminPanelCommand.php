@@ -3,10 +3,12 @@
 namespace Parse\AdminPanel\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
-use Parse\AdminPanel\Authorization\Actions\InitializeRolePermissions;
+use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Installation\AdminPanelInstaller;
+use Spatie\Permission\PermissionRegistrar;
 
 final class InstallAdminPanelCommand extends Command
 {
@@ -21,8 +23,19 @@ final class InstallAdminPanelCommand extends Command
         parent::__construct();
     }
 
-    public function handle(PanelManager $panels, InitializeRolePermissions $permissions): int
+    public function handle(PanelManager $panels, PermissionManifest $manifest): int
     {
+        if ($this->laravel->configurationIsCached()) {
+            $this->components->error('Run php artisan config:clear before installing Admin Panel.');
+
+            return self::FAILURE;
+        }
+        if ($this->hasLegacyPermissionSchema()) {
+            $this->components->error('Existing permission tables do not support Teams. Add and run the Spatie Teams upgrade migration before rerunning installation.');
+
+            return self::FAILURE;
+        }
+
         $result = $this->installer->install(base_path());
 
         foreach ($result->completed as $message) {
@@ -38,7 +51,11 @@ final class InstallAdminPanelCommand extends Command
         }
 
         $successful = $result->warnings === [];
-        $migrationsReady = $this->publish('permission-migrations');
+        $teamsReady = $this->loadPermissionConfiguration($panels);
+        if (! $teamsReady) {
+            $successful = false;
+        }
+        $migrationsReady = $teamsReady && $this->publish('permission-migrations');
         if (! $migrationsReady) {
             $successful = false;
         }
@@ -49,13 +66,18 @@ final class InstallAdminPanelCommand extends Command
                 $successful = false;
                 $this->components->warn('Database migration did not complete; resolve the issue and rerun php artisan migrate.');
             } else {
-                $guards = collect($panels->panels())
-                    ->filter(fn ($panel): bool => $panel->authorizationEnabled)
-                    ->pluck('guard')
-                    ->unique();
-                foreach ($guards as $guard) {
-                    $permissions->handle($guard);
-                    $this->components->info("Initialized the admin role and role-management permissions for guard [{$guard}].");
+                foreach ($panels->panels() as $panel) {
+                    if (! $panel->authorizationEnabled) {
+                        continue;
+                    }
+                    if (! is_file($manifest->path($panel)) && $this->call('admin-panel:generate', ['--panel' => $panel->id, '--only' => 'permissions']) !== self::SUCCESS) {
+                        $successful = false;
+
+                        continue;
+                    }
+                    if ($this->call('admin-panel:permissions-sync', ['--panel' => $panel->id]) !== self::SUCCESS) {
+                        $successful = false;
+                    }
                 }
             }
         } else {
@@ -92,10 +114,57 @@ final class InstallAdminPanelCommand extends Command
         $this->components->bulletList([
             'Add Spatie HasRoles to the panel user model and explicitly configure its supported guards',
             'Authorization is enabled by default; set authorization.enabled to false only for panels that do not need it',
-            'After configuring the user model, run admin-panel:permissions-init --panel=<panel-id> --user=<existing-user-id>',
+            'Teams are enabled by default; the default panel uses team_id=0 and super_admin_role=super-admin',
+            'For tenant panels, set authorization.team_id to null and configure authorization.team_resolver before using the panel',
+            'After adding resources, regenerate and sync permissions using admin-panel:generate --panel=<panel-id> and admin-panel:permissions-sync --panel=<panel-id>',
+            'Grant access using admin-panel:super-admin --panel=<panel-id> --user=<existing-user-id>',
         ]);
 
         return $successful ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function loadPermissionConfiguration(PanelManager $panels): bool
+    {
+        $path = config_path('permission.php');
+        if (! is_file($path)) {
+            $this->components->warn('Spatie Teams configuration is missing; migrations were skipped.');
+
+            return false;
+        }
+        $configuration = require $path;
+        if (! is_array($configuration) || ($configuration['teams'] ?? false) !== true) {
+            $this->components->warn('Enable permission.teams before running migrations.');
+
+            return false;
+        }
+        foreach ($panels->panels() as $panel) {
+            if ($panel->authorizationEnabled && $panel->permissionTeamId === null && $panel->permissionTeamResolver === null) {
+                $this->components->warn("Configure authorization.team_id or authorization.team_resolver for panel [{$panel->id}] before enabling Teams.");
+
+                return false;
+            }
+        }
+        config()->set('permission', $configuration);
+        app(PermissionRegistrar::class)->initializeCache();
+
+        return true;
+    }
+
+    private function hasLegacyPermissionSchema(): bool
+    {
+        if (config('permission.teams', false)) {
+            return false;
+        }
+        $connection = DB::connection();
+        if ($connection->getDriverName() === 'sqlite' && $connection->getDatabaseName() !== ':memory:'
+            && ! is_file($connection->getDatabaseName())) {
+            return false;
+        }
+        $schema = $connection->getSchemaBuilder();
+        $roles = config('permission.table_names.roles', 'roles');
+
+        return $schema->hasTable($roles)
+            && ! $schema->hasColumn($roles, config('permission.column_names.team_foreign_key', 'team_id'));
     }
 
     private function publish(string $tag): bool

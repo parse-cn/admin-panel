@@ -10,6 +10,6 @@ final class PanelPermissions
 {
     public static function allows(?Authenticatable $user, string $permission, PanelRuntime $panel): bool
     {
-        return $user !== null && Gate::forUser($user)->allows($permission, [$panel->guard]);
+        return $user !== null && app(PanelTeams::class)->containsUser($panel, $user) && Gate::forUser($user)->allows($permission, [$panel->guard]);
     }
 }

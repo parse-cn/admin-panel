@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Parse\AdminPanel\Authorization\PanelPermissions;
+use Parse\AdminPanel\Authorization\PanelSuperAdmin;
+use Parse\AdminPanel\Authorization\PanelTeams;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
 use Parse\AdminPanel\Resources\AdminPanelResource;
@@ -33,7 +35,7 @@ final class RoleResource extends AdminPanelResource
 
     public static function routeName(): string
     {
-        return static::panel()->route('roles');
+        return self::panel()->route('roles');
     }
 
     public static function title(): string
@@ -53,22 +55,23 @@ final class RoleResource extends AdminPanelResource
 
     public static function query(): Builder
     {
-        return parent::query()->where('guard_name', static::panel()->guard)->withCount('permissions');
+        return app(PanelTeams::class)->roles(self::panel())->withCount('permissions');
     }
 
     public static function authorize(string $ability, Authenticatable $user, ?Model $record = null): bool
     {
-        $panel = static::panel();
+        $panel = self::panel();
 
         return $panel->authorizationEnabled
-            && ($record === null || $record->guard_name === $panel->guard)
+            && ($record === null || app(PanelTeams::class)->containsRole($panel, $record))
+            && ($record === null || ! in_array($ability, ['update', 'delete'], true) || ! app(PanelSuperAdmin::class)->reserved($panel, $record->name))
             && PanelPermissions::allows($user, 'roles.'.$ability, $panel);
     }
 
     public static function columns(): array
     {
         return [
-            ['name' => 'name', 'label' => __('admin-panel::messages.authorization.name'), 'type' => 'identity', 'link' => 'show', 'searchable' => true, 'sortable' => true],
+            ['name' => 'name', 'label' => __('admin-panel::messages.authorization.name'), 'type' => 'identity', 'subtitle' => 'role_description', 'link' => 'show', 'searchable' => true, 'sortable' => true],
             ['name' => 'permissions_count', 'label' => __('admin-panel::messages.authorization.permission_count'), 'sortable' => true],
             ['name' => 'guard_name', 'label' => __('admin-panel::messages.authorization.guard'), 'type' => 'badge'],
             ['name' => 'created_at', 'label' => __('admin-panel::messages.authorization.created_at'), 'type' => 'datetime', 'sortable' => true],
@@ -79,7 +82,7 @@ final class RoleResource extends AdminPanelResource
     public static function fields(): array
     {
         $permissionModel = config('permission.models.permission');
-        $permissions = $permissionModel::query()->where('guard_name', static::panel()->guard)->orderBy('name')->get();
+        $permissions = $permissionModel::query()->where('guard_name', self::panel()->guard)->orderBy('name')->get();
 
         return [
             ['name' => 'name', 'label' => __('admin-panel::messages.authorization.name'), 'required' => true],
@@ -91,8 +94,8 @@ final class RoleResource extends AdminPanelResource
                 'options' => $permissions->map(fn (Model $permission): array => [
                     'value' => (string) $permission->getKey(),
                     'permission' => $permission->name,
-                    'label' => static::permissionLabel($permission->name),
-                    'group' => static::permissionGroupLabel(static::permissionGroup($permission->name)),
+                    'label' => self::permissionLabel($permission->name),
+                    'group' => self::permissionGroupLabel(self::permissionGroup($permission->name)),
                 ])->all(),
             ],
         ];
@@ -117,7 +120,7 @@ final class RoleResource extends AdminPanelResource
 
     private static function permissionGroupLabel(string $group): string
     {
-        foreach ([...static::panel()->resources(), ...static::panel()->widgets()] as $registration) {
+        foreach ([...self::panel()->resources(), ...self::panel()->widgets()] as $registration) {
             if ($registration->resource::permissionPrefix() === $group) {
                 return $registration->resource::title();
             }
@@ -129,21 +132,33 @@ final class RoleResource extends AdminPanelResource
 
     public static function rules(?Model $record = null): array
     {
-        $role = new (static::model());
+        $role = new (self::model());
         $permission = new (config('permission.models.permission'));
+        $teams = app(PanelTeams::class);
+        $unique = Rule::unique(self::model(), 'name')->where('guard_name', self::panel()->guard);
+        if ($teams->enabled()) {
+            $unique->where($teams->key(), $teams->current());
+        }
 
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique(static::model(), 'name')->where('guard_name', static::panel()->guard)->ignore($record?->getKey(), $role->getKeyName())],
+            'name' => ['required', 'string', 'max:255', Rule::notIn(array_filter([self::panel()->superAdminRole], fn ($name) => $name !== null)), $unique->ignore($record?->getKey(), $role->getKeyName())],
             'permission_ids' => ['present', 'array'],
-            'permission_ids.*' => ['required', 'distinct', Rule::exists($permission::class, $permission->getKeyName())->where('guard_name', static::panel()->guard)],
+            'permission_ids.*' => ['required', 'distinct', Rule::exists($permission::class, $permission->getKeyName())->where('guard_name', self::panel()->guard)],
         ];
     }
 
     public static function record(Model $record): array
     {
         $serialized = parent::record($record);
+        $isSuperAdmin = app(PanelSuperAdmin::class)->reserved(self::panel(), $record->name);
+        $serialized['values']['is_super_admin'] = $isSuperAdmin;
+        if ($isSuperAdmin) {
+            $serialized['values']['role_description'] = __('admin-panel::messages.authorization.system_role');
+
+            return $serialized;
+        }
         $permissions = $record->permissions()->orderBy('name')->get();
-        $serialized['values']['permission_options'] = static::fields()[1]['options'];
+        $serialized['values']['permission_options'] = self::fields()[1]['options'];
         $serialized['values']['permission_ids'] = $permissions->modelKeys();
         $serialized['values']['permission_ids'] = array_map(strval(...), $serialized['values']['permission_ids']);
         $serialized['values']['permission_groups'] = $permissions
@@ -152,12 +167,12 @@ final class RoleResource extends AdminPanelResource
                 : __('admin-panel::messages.authorization.other'))
             ->map(fn ($items, string $group): array => [
                 'name' => $group,
-                'label' => static::permissionGroupLabel($group),
+                'label' => self::permissionGroupLabel($group),
                 'permissions' => $items->pluck('name')->values()->all(),
             ])->values()->all();
 
         $serialized['values']['permission_labels'] = $permissions->mapWithKeys(fn (Model $permission): array => [
-            $permission->getAttribute('name') => static::permissionLabel($permission->getAttribute('name')),
+            $permission->getAttribute('name') => self::permissionLabel($permission->getAttribute('name')),
         ])->all();
 
         return $serialized;
@@ -166,23 +181,37 @@ final class RoleResource extends AdminPanelResource
     public static function recordForIndex(Model $record): array
     {
         // Keep the grouped permission payload on detail/edit responses only.
-        return parent::record($record);
+        $serialized = parent::record($record);
+        if (app(PanelSuperAdmin::class)->reserved(self::panel(), $record->name)) {
+            $serialized['values']['permissions_count'] = __('admin-panel::messages.authorization.all_permissions');
+            $serialized['values']['role_description'] = __('admin-panel::messages.authorization.system_role');
+        }
+
+        return $serialized;
     }
 
     public static function createRecord(array $attributes, Authenticatable $user): Model
     {
-        $role = new (static::model());
-        $role->fill(['name' => $attributes['name'], 'guard_name' => static::panel()->guard]);
+        abort_if(app(PanelSuperAdmin::class)->reserved(self::panel(), $attributes['name']), 403);
+        $role = new (self::model());
+        $role->fill(['name' => $attributes['name'], 'guard_name' => self::panel()->guard]);
+        $teams = app(PanelTeams::class);
+        if ($teams->enabled()) {
+            $role->setAttribute($teams->key(), $teams->current());
+        }
         $role->save();
-        static::syncPermissions($role, $attributes);
+        self::syncPermissions($role, $attributes);
 
         return $role;
     }
 
     public static function updateRecord(Model $record, array $attributes): Model
     {
+        abort_unless(app(PanelTeams::class)->containsRole(self::panel(), $record), 403);
+        abort_if(app(PanelSuperAdmin::class)->reserved(self::panel(), $record->name)
+            || app(PanelSuperAdmin::class)->reserved(self::panel(), $attributes['name'] ?? $record->name), 403);
         $record->update(Arr::only($attributes, ['name']));
-        static::syncPermissions($record, $attributes);
+        self::syncPermissions($record, $attributes);
 
         return $record;
     }
@@ -191,7 +220,7 @@ final class RoleResource extends AdminPanelResource
     {
         $permissionModel = config('permission.models.permission');
         $permissions = $permissionModel::query()
-            ->where('guard_name', static::panel()->guard)
+            ->where('guard_name', self::panel()->guard)
             ->whereKey($attributes['permission_ids'])
             ->get();
         $role->syncPermissions($permissions);
@@ -199,6 +228,8 @@ final class RoleResource extends AdminPanelResource
 
     public static function deleteRecord(Model $record, Authenticatable $user): void
     {
+        abort_unless(app(PanelTeams::class)->containsRole(self::panel(), $record), 403);
+        abort_if(app(PanelSuperAdmin::class)->reserved(self::panel(), $record->name), 403);
         // Include assignments to every model type, not only the current panel user model.
         $assigned = $record->getConnection()->table(config('permission.table_names.model_has_roles'))
             ->where(config('permission.column_names.role_pivot_key') ?: 'role_id', $record->getKey())->exists();

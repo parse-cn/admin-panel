@@ -7,11 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Parse\AdminPanel\Authorization\Actions\AssignUserRoles;
 use Parse\AdminPanel\Authorization\PanelPermissions;
+use Parse\AdminPanel\Authorization\PanelSuperAdmin;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
 
 abstract class AdminPanelUserResource extends AdminPanelResource
 {
+    public static function authorize(string $ability, Authenticatable $user, ?Model $record = null): bool
+    {
+        $superAdmin = app(PanelSuperAdmin::class);
+        if ($record instanceof Authenticatable && in_array($ability, ['update', 'delete'], true)
+            && $superAdmin->hasRole($record, self::panel()) && ! $superAdmin->check($user, self::panel())) {
+            return false;
+        }
+
+        return parent::authorize($ability, $user, $record);
+    }
+
     /**
      * @return list<array<string, mixed>>
      */

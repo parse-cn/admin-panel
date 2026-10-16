@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Parse\AdminPanel\Authorization\PanelPermissions;
+use Parse\AdminPanel\Authorization\PanelSuperAdmin;
+use Parse\AdminPanel\Authorization\PanelTeams;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelRuntime;
 use Spatie\Permission\Guard;
 
@@ -17,20 +19,31 @@ final class AssignUserRoles
         abort_unless($panel->authorizationEnabled
             && PanelPermissions::allows($actor, 'users.assignRoles', $panel), 403);
         abort_unless($user instanceof $panel->userModel
+            && app(PanelTeams::class)->containsUser($panel, $user)
             && $user->exists
             && Guard::getNames($user)->contains($panel->guard), 403);
 
         $roleModel = config('permission.models.role');
         $role = new $roleModel;
+        $teams = app(PanelTeams::class);
+        $exists = Rule::exists($roleModel, $role->getKeyName())->where('guard_name', $panel->guard);
+        if ($panel->superAdminRole !== null) {
+            $exists->whereNot('name', $panel->superAdminRole);
+        }
+        abort_if(app(PanelSuperAdmin::class)->hasRole($user, $panel) && ! app(PanelSuperAdmin::class)->check($actor, $panel), 403);
+        if ($teams->enabled()) {
+            $exists->where($teams->key(), $teams->current());
+        }
         Validator::make(['role_ids' => $roleIds], [
             'role_ids' => ['array'],
-            'role_ids.*' => ['required', 'distinct', Rule::exists($roleModel, $role->getKeyName())->where('guard_name', $panel->guard)],
+            'role_ids.*' => ['required', 'distinct', $exists],
         ])->validate();
 
-        $user->getConnection()->transaction(function () use ($user, $panel, $roleModel, $roleIds): void {
-            $roles = $roleModel::query()->where('guard_name', $panel->guard)->whereKey($roleIds)->get();
+        $user->getConnection()->transaction(function () use ($user, $panel, $roleIds): void {
+            $roles = app(PanelTeams::class)->roles($panel)->whereKey($roleIds)->get();
             $user->unsetRelation('roles');
-            $current = $user->roles()->where('guard_name', $panel->guard)->get();
+            $current = $user->roles()->where('guard_name', $panel->guard)
+                ->when($panel->superAdminRole !== null, fn ($query) => $query->where('name', '!=', $panel->superAdminRole))->get();
             if ($current->isNotEmpty()) {
                 $user->removeRole($current);
             }
@@ -49,14 +62,15 @@ final class AssignUserRoles
     {
         abort_unless($panel->authorizationEnabled
             && PanelPermissions::allows($actor, 'users.assignRoles', $panel), 403);
-        $roleModel = config('permission.models.role');
 
         return [
             'name' => 'role_ids',
             'label' => __('admin-panel::messages.authorization.roles'),
             'type' => 'checkbox-list',
             'writeOnly' => true,
-            'options' => $roleModel::query()->where('guard_name', $panel->guard)->orderBy('name')->get()
+            'options' => app(PanelTeams::class)->roles($panel)
+                ->when($panel->superAdminRole !== null, fn ($query) => $query->where('name', '!=', $panel->superAdminRole))
+                ->orderBy('name')->get()
                 ->map(fn (Model $role): array => ['value' => (string) $role->getKey(), 'label' => $role->name])->all(),
         ];
     }
@@ -65,8 +79,12 @@ final class AssignUserRoles
     {
         abort_unless($panel->authorizationEnabled
             && PanelPermissions::allows($actor, 'users.assignRoles', $panel)
-            && $user instanceof $panel->userModel, 403);
+            && $user instanceof $panel->userModel
+            && app(PanelTeams::class)->containsUser($panel, $user), 403);
 
-        return $user->roles()->where('guard_name', $panel->guard)->get()->modelKeys();
+        return $user->roles()->where('guard_name', $panel->guard)
+            ->when($panel->superAdminRole !== null, fn ($query) => $query->where('name', '!=', $panel->superAdminRole))
+            ->when(app(PanelTeams::class)->enabled(), fn ($query) => $query->where(config('permission.table_names.roles').'.'.app(PanelTeams::class)->key(), app(PanelTeams::class)->current()))
+            ->get()->modelKeys();
     }
 }

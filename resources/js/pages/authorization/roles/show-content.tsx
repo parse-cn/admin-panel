@@ -22,6 +22,7 @@ export default function RoleShowContent({
   const options = (record.values.permission_options ?? []) as CrudOption[];
   const selected = (record.values.permission_ids ?? []) as string[];
   const permissionCount = groups.reduce((count, group) => count + group.permissions.length, 0);
+  const isSuperAdmin = record.values.is_super_admin === true;
   const isSheet = presentation === 'sheet';
 
   useAdminPanelBreadcrumb({
@@ -47,6 +48,7 @@ export default function RoleShowContent({
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="break-all text-lg font-semibold tracking-tight">{record.title}</h1>
               <Badge variant="secondary">{String(record.values.guard_name ?? '')}</Badge>
+              {isSuperAdmin && <Badge variant="secondary">{t('authorization.system_role')}</Badge>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {t('authorization.role')} · #{String(record.key)}
@@ -59,15 +61,19 @@ export default function RoleShowContent({
         <Frame aria-labelledby="role-granted-permissions" className="min-w-0 w-full" spacing="sm">
           <FrameHeader className="flex-row items-center gap-2">
             <h2 id="role-granted-permissions" className="text-sm font-semibold">{t('authorization.permissions')}</h2>
-            <Badge variant="secondary">{permissionCount}/{options.length}</Badge>
+            <Badge variant="secondary">{isSuperAdmin ? t('authorization.all_permissions') : `${permissionCount}/${options.length}`}</Badge>
           </FrameHeader>
-          <FramePanel className="px-0 py-0">
-            <PermissionMatrix label={t('authorization.permissions')} options={options} value={selected} />
+          <FramePanel className={isSuperAdmin ? 'px-4 py-3' : 'px-0 py-0'}>
+            {isSuperAdmin ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">{t('authorization.super_admin_description')}</p>
+            ) : (
+              <PermissionMatrix label={t('authorization.permissions')} options={options} value={selected} />
+            )}
           </FramePanel>
         </Frame>
       </div>
 
-      {(routes.destroy || routes.edit) && (
+      {!isSuperAdmin && (routes.destroy || routes.edit) && (
         <footer className={isSheet ? 'flex shrink-0 items-center justify-between gap-3 border-t bg-background px-5 py-3' : 'flex items-center justify-between gap-3 border-t pt-3'}>
           <div>
             {routes.destroy && (

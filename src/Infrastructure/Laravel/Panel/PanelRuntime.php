@@ -66,6 +66,9 @@ final readonly class PanelRuntime
         public ?string $permissionsFile = null,
         public array $permissions = [],
         public array $rolesNavigation = [],
+        public int|string|null $permissionTeamId = null,
+        public ?string $permissionTeamResolver = null,
+        public ?string $superAdminRole = null,
     ) {
         $this->widgets = new Collection;
     }

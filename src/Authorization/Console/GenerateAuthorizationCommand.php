@@ -19,7 +19,7 @@ use ReflectionMethod;
 final class GenerateAuthorizationCommand extends Command
 {
     protected $signature = 'admin-panel:generate
-        {--panel= : Panel ID}
+        {--panel=admin_panel : Panel ID}
         {--resource= : Registered resource or widget FQCN or short name; comma-separated}
         {--only= : Generate only permissions or policies}
         {--dry-run : Preview without writing files or database records}';

@@ -5,6 +5,7 @@ namespace Parse\AdminPanel\Authorization\Console;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Parse\AdminPanel\Authorization\PanelTeams;
 use Parse\AdminPanel\Authorization\PermissionManifest;
 use Parse\AdminPanel\Infrastructure\Laravel\Panel\PanelManager;
 use RuntimeException;
@@ -14,13 +15,35 @@ use Throwable;
 final class SyncPermissionsCommand extends Command
 {
     protected $signature = 'admin-panel:permissions-sync
-        {--panel= : Panel ID}
+        {--panel=admin_panel : Panel ID}
         {--dry-run : Preview without changing database records}
-        {--assign-role= : Append manifest permissions to an existing role in the panel guard}';
+        {--assign-role= : Append manifest permissions to an existing role in the panel guard}
+        {--team-id= : Permission team ID for role assignment}';
 
     protected $description = 'Synchronize database permissions from the deployed permission manifest';
 
     public function handle(PanelManager $panels, PermissionManifest $manifest): int
+    {
+        $teams = app(PanelTeams::class);
+        try {
+            $teamId = null;
+            if ($this->option('assign-role') !== null || $this->option('team-id') !== null) {
+                $panelId = $this->option('panel');
+                if (! is_string($panelId) || $panelId === '') {
+                    throw new InvalidArgumentException('--panel is required.');
+                }
+                $teamId = $teams->resolve($panels->panel($panelId), explicit: $this->option('team-id'));
+            }
+
+            return $teams->run($teamId, fn (): int => $this->synchronize($panels, $manifest));
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::INVALID;
+        }
+    }
+
+    private function synchronize(PanelManager $panels, PermissionManifest $manifest): int
     {
         try {
             $id = $this->option('panel');
@@ -37,9 +60,7 @@ final class SyncPermissionsCommand extends Command
             if (! $permission instanceof Model) {
                 throw new InvalidArgumentException('The configured permission model must extend Eloquent Model.');
             }
-            $roleModel = config('permission.models.role');
-            $role = $this->option('assign-role') === null ? null : $roleModel::query()
-                ->where('guard_name', $panel->guard)->where('name', $this->option('assign-role'))->first();
+            $role = $this->option('assign-role') === null ? null : app(PanelTeams::class)->roles($panel)->where('name', $this->option('assign-role'))->first();
             if ($this->option('assign-role') !== null && $role === null) {
                 throw new InvalidArgumentException('The requested role does not exist in this panel guard.');
             }
