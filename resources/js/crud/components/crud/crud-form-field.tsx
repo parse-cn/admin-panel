@@ -1,4 +1,4 @@
-import { Field, FieldError, FieldLabel } from '@admin-panel/ui';
+import { Badge, Field, FieldError, FieldLabel, Frame, FrameHeader, FramePanel } from '@admin-panel/ui';
 import type { ReactNode } from 'react';
 import { useCrudI18n } from '../../i18n/crud-i18n';
 import { CheckboxListField } from './fields/checkbox-list-field';
@@ -155,6 +155,29 @@ export function CrudFormField({
         onChange={(next) => onChange(field.name, next)}
       />
     );
+
+  if (field.name === 'permission_ids' && field.type === 'checkbox-list') {
+    const options = field.options ?? [];
+    const selected = new Set(Array.isArray(value) ? value : []);
+    const count = options.filter((option) => selected.has(option.value ?? option.label)).length;
+
+    return (
+      <Frame className="min-w-0 w-full" spacing="sm">
+        <FrameHeader className="flex-row items-center gap-2">
+          <FieldLabel className="text-sm font-semibold" id={`crud-${field.name}-label`} htmlFor={`crud-${field.name}`}>
+            {field.label}
+          </FieldLabel>
+          <Badge variant="secondary">{count}/{options.length}</Badge>
+        </FrameHeader>
+        <FramePanel className="px-0 py-0">
+          <Field aria-labelledby={`crud-${field.name}-label`} data-invalid={Boolean(error)}>
+            {control}
+            {error && <FieldError className="px-3 pb-3">{error}</FieldError>}
+          </Field>
+        </FramePanel>
+      </Frame>
+    );
+  }
 
   return (
     <Field data-invalid={Boolean(error)}>

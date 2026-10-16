@@ -2,6 +2,7 @@ export type CrudOption = {
   label: string;
   value?: string;
   group?: string;
+  permission?: string;
   variant?:
     | 'default'
     | 'primary'

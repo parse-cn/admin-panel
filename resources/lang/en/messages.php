@@ -20,6 +20,8 @@ return [
             'replicate' => 'Duplicate',
             'reorder' => 'Reorder',
         ],
+        'permission_groups_label' => 'Resource',
+        'other_permissions' => 'Other permissions',
         'permission_groups' => [
             'roles' => 'Roles',
             'users' => 'Users',

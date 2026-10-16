@@ -20,6 +20,8 @@ return [
             'replicate' => '复制',
             'reorder' => '调整顺序',
         ],
+        'permission_groups_label' => '资源',
+        'other_permissions' => '其他权限',
         'permission_groups' => [
             'roles' => '角色管理',
             'users' => '用户管理',

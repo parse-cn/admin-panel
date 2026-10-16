@@ -234,7 +234,9 @@ export function CrudForm({
                 : undefined
             }
           >
-            {isSheet ? (
+            {isSheet || resource.fields.some((item) => 'fields' in item
+              ? item.fields.some((field) => field.name === 'permission_ids' && field.type === 'checkbox-list')
+              : item.name === 'permission_ids' && item.type === 'checkbox-list') ? (
               fieldContent
             ) : (
               <Frame className="w-full" spacing="sm" variant="default">

@@ -90,6 +90,7 @@ final class RoleResource extends AdminPanelResource
                 'writeOnly' => true,
                 'options' => $permissions->map(fn (Model $permission): array => [
                     'value' => (string) $permission->getKey(),
+                    'permission' => $permission->name,
                     'label' => static::permissionLabel($permission->name),
                     'group' => static::permissionGroupLabel(static::permissionGroup($permission->name)),
                 ])->all(),
@@ -142,6 +143,7 @@ final class RoleResource extends AdminPanelResource
     {
         $serialized = parent::record($record);
         $permissions = $record->permissions()->orderBy('name')->get();
+        $serialized['values']['permission_options'] = static::fields()[1]['options'];
         $serialized['values']['permission_ids'] = $permissions->modelKeys();
         $serialized['values']['permission_ids'] = array_map(strval(...), $serialized['values']['permission_ids']);
         $serialized['values']['permission_groups'] = $permissions
