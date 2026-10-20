@@ -211,10 +211,6 @@ return [
         'default_name' => 'Admin Panel',
     ],
     'crud' => [
-        'list' => [
-            'load_error' => 'Unable to load the list. Please try again.',
-            'retry' => 'Retry',
-        ],
         'actions' => [
             'add' => 'Add :resource',
             'delete' => 'Delete',
@@ -293,6 +289,8 @@ return [
             ],
         ],
         'list' => [
+            'load_error' => 'Unable to load the list. Please try again.',
+            'retry' => 'Retry',
             'summary' => ':shown of :total :resource',
             'selected' => ':count selected',
             'empty' => 'No :resource match the current filters.',

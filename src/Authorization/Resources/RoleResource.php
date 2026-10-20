@@ -108,6 +108,11 @@ final class RoleResource extends AdminPanelResource
 
     private static function permissionLabel(string $permission): string
     {
+        $customKey = self::panel()->permissionLabels[$permission] ?? null;
+        if ($customKey !== null && Lang::has($customKey)) {
+            return __($customKey);
+        }
+
         $key = 'admin-panel::messages.authorization.permission_labels.'.$permission;
         if (Lang::has($key)) {
             return __($key);

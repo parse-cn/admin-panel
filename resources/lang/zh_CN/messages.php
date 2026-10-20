@@ -211,10 +211,6 @@ return [
         'default_name' => '管理面板',
     ],
     'crud' => [
-        'list' => [
-            'load_error' => '列表加载失败，请稍后重试。',
-            'retry' => '重试',
-        ],
         'actions' => [
             'add' => '新增:resource',
             'delete' => '删除',
@@ -293,6 +289,8 @@ return [
             ],
         ],
         'list' => [
+            'load_error' => '列表加载失败，请稍后重试。',
+            'retry' => '重试',
             'summary' => '显示 :shown 条，共 :total 条:resource',
             'selected' => '已选择 :count 条',
             'empty' => '没有符合当前筛选条件的:resource。',

@@ -151,6 +151,7 @@ final class LaravelPanelFactory
             permissionTeamId: $teamId,
             permissionTeamResolver: $teamResolver,
             superAdminRole: $superAdminRole,
+            permissionLabels: $this->permissionLabels($configuration),
         );
         $panel->imageUpload(
             purpose: 'image',
@@ -175,6 +176,26 @@ final class LaravelPanelFactory
         ));
 
         return $this->runtimePanels->register($panel);
+    }
+
+    /**
+     * @param  array<string, mixed>  $configuration
+     * @return array<string, string>
+     */
+    private function permissionLabels(array $configuration): array
+    {
+        $labels = data_get($configuration, 'authorization.permission_labels', []);
+        if (! is_array($labels)) {
+            throw new InvalidArgumentException('Admin panel configuration [authorization.permission_labels] must be an array.');
+        }
+
+        foreach ($labels as $permission => $key) {
+            if (! is_string($permission) || trim($permission) === '' || ! is_string($key) || trim($key) === '') {
+                throw new InvalidArgumentException('Admin panel permission labels must map non-empty permission names to translation keys.');
+            }
+        }
+
+        return $labels;
     }
 
     /**

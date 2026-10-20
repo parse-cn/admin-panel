@@ -23,6 +23,7 @@ final readonly class PanelRuntime
     /**
      * @param  array<string, mixed>  $rolesNavigation
      * @param  list<string>  $permissions
+     * @param  array<string, string>  $permissionLabels
      * @param  list<string>  $middleware
      * @param  list<int>  $perPageOptions
      * @param  class-string<Model>  $userModel
@@ -69,6 +70,7 @@ final readonly class PanelRuntime
         public int|string|null $permissionTeamId = null,
         public ?string $permissionTeamResolver = null,
         public ?string $superAdminRole = null,
+        public array $permissionLabels = [],
     ) {
         $this->widgets = new Collection;
     }
