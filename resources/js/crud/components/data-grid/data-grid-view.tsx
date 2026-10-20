@@ -155,8 +155,10 @@ export function DataGridView({
               collapseJson
               column={column}
               href={
-                column.type === 'identity' && column.link === 'show'
-                  ? (row.original.routes.show ?? undefined)
+                column.type === 'identity' &&
+                column.link === 'show' &&
+                row.original.routes.show
+                  ? preserveCurrentQuery(row.original.routes.show)
                   : undefined
               }
               onShow={
