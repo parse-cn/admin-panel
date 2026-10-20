@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Input } from '@admin-panel/ui/components/ui/input';
 import { PermissionMatrix } from '../../../../components/permission-matrix';
 import { Checkbox } from '@admin-panel/ui/components/ui/checkbox';
 import { useCrudI18n } from '../../../i18n/crud-i18n';
@@ -9,8 +11,24 @@ export function CheckboxListField({ field, value, onChange }: {
   onChange: (value: string[]) => void;
 }) {
   const { t } = useCrudI18n();
+  const [search, setSearch] = useState('');
+  const searchable = (field.options?.length ?? 0) > 6;
+  const query = searchable ? search.trim().toLocaleLowerCase() : '';
+  const options = (field.options ?? []).filter((option) =>
+    !query || [option.label, option.group, option.permission].some((text) =>
+      text?.toLocaleLowerCase().includes(query),
+    ),
+  );
+  const searchInput = searchable && (
+    <Input
+      aria-label={t('crud.filters.search_field', { field: field.label })}
+      placeholder={t('crud.filters.search_field', { field: field.label })}
+      value={search}
+      onChange={(event) => setSearch(event.target.value)}
+    />
+  );
   const groups = new Map<string, CrudOption[]>();
-  for (const option of field.options ?? []) {
+  for (const option of options) {
     const group = option.group ?? field.label;
     groups.set(group, [...(groups.get(group) ?? []), option]);
   }
@@ -23,13 +41,24 @@ export function CheckboxListField({ field, value, onChange }: {
   }
 
   if (field.name === 'permission_ids') {
-    return <PermissionMatrix label={field.label} id={`crud-${field.name}`} options={field.options ?? []} value={value} onChange={onChange} />;
+    return (
+      <div className="space-y-3">
+        {searchable && <div className="px-3 pt-3">{searchInput}</div>}
+        {query && options.length === 0 ? (
+          <p className="px-3 pb-3 text-sm text-muted-foreground">{t('crud.filters.no_results')}</p>
+        ) : (
+          <PermissionMatrix label={field.label} id={`crud-${field.name}`} options={options} value={value} onChange={onChange} />
+        )}
+      </div>
+    );
   }
 
 
   return (
     <div aria-label={field.label} className="space-y-3" id={`crud-${field.name}`} role="group">
-      {groups.size === 0 && <p className="text-sm text-muted-foreground">{t('authorization.empty_permissions')}</p>}
+      {searchInput}
+      {query && groups.size === 0 && <p className="text-sm text-muted-foreground">{t('crud.filters.no_results')}</p>}
+      {!query && groups.size === 0 && <p className="text-sm text-muted-foreground">{t('authorization.empty_permissions')}</p>}
       {[...groups].map(([group, options]) => {
         const values = options.map((option) => option.value ?? option.label);
         const count = values.filter((item) => selected.has(item)).length;
