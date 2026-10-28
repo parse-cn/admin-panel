@@ -57,6 +57,7 @@ export type CrudColumn = {
     | 'json';
   detailOnly?: boolean;
   hidden?: boolean;
+  visible?: boolean;
   searchable: boolean | string[];
   sortable: boolean;
   defaultSort?: 'asc' | 'desc';

@@ -265,6 +265,11 @@ export function DataGridView({
     enableSortingRemoval: true,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (record) => String(record.key),
+    initialState: {
+      columnVisibility: Object.fromEntries(
+        visibleColumns.map((column) => [column.name, column.visible ?? true]),
+      ),
+    },
     manualPagination: true,
     manualSorting: true,
     onPaginationChange: (updater) => {

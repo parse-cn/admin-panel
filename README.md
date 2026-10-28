@@ -496,9 +496,16 @@ final class CustomerResource extends AdminPanelResource
 | `link` | `'show'` | — | 设置后单元格标题链接到详情页 |
 | `detailOnly` | bool | `false` | 只在详情页显示，列表接口不返回该列 |
 | `hidden` | bool | `false` | 不渲染该列 |
+| `visible` | bool | `true` | 列表默认是否展示该列，用户可在列设置中调整 |
 | `copyable` | bool | `false` | 显示为可点击复制的等宽文本 |
 | `truncate` | bool | `false` | 限宽截断并显示 title |
 | `truncateMiddle` | bool | `false` | 中间省略（适合长 ID，超过 14 字符时 `前7…后7`） |
+
+例如，默认隐藏邮箱列，允许用户在列设置中开启：
+
+```php
+['name' => 'email', 'label' => '邮箱', 'type' => 'text', 'visible' => false],
+```
 
 列类型：
 
